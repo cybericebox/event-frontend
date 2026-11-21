@@ -11,7 +11,7 @@ export function averageLevel(average: number): (typeof LEVELS)[number] {
     return LEVELS[Math.min(6, Math.max(1, Math.floor(average + 0.5))) - 1];
 }
 
-/** «Легка 3,3»: the level and the number, as in the task catalog; «—» without a difficulty. */
+/** “Easy 3.3”: the level and the number, as in the task catalog; “—” without a difficulty. */
 export function AverageDifficulty({average}: {average: number | null}) {
     if (average === null) return <span className="event-catalog-stat__none" aria-label={t("manage.exercises.avgDifficulty.none")}>—</span>;
     const level = t(`manage.exercises.avgDifficulty.${averageLevel(average)}`);
@@ -49,7 +49,7 @@ export function InfoPopover({label, title, trigger, triggerClassName = "event-su
     </span>;
 }
 
-/** The subtask count; it opens the subtask names. `labelled` writes «3 підзавдання» instead of the bare number. */
+/** The subtask count; it opens the subtask names. `labelled` writes “3 subtasks” instead of the bare number. */
 export function SubtaskCount({count, names, labelled = false}: {count: number | null; names: string[]; labelled?: boolean}) {
     if (count === null) return <span className="event-catalog-stat__none" aria-label={t("manage.exercises.subtasks.none")}>—</span>;
     return <InfoPopover label={t("manage.exercises.subtasks.show", {count})} title={t("manage.exercises.subtasks.title")} trigger={labelled ? tPlural("manage.exercises.subtasks.count", count) : count}>
@@ -59,7 +59,7 @@ export function SubtaskCount({count, names, labelled = false}: {count: number | 
     </InfoPopover>;
 }
 
-/** «Середня складність» and «Підзавдання» side by side, as in «Додати з каталогу» and the event's task list. */
+/** “Average difficulty” and “Subtasks” side by side, as in “Add from catalog” and the event's task list. */
 export function CatalogStatsList({average, count, names, className = ""}: {average: number | null; count: number | null; names: string[]; className?: string}) {
     return <dl className={`event-catalog-stats${className ? ` ${className}` : ""}`}>
         <div><dt>{t("manage.exercises.attachDialog.avgDifficulty")}</dt><dd><AverageDifficulty average={average} /></dd></div>

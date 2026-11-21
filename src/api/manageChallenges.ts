@@ -41,7 +41,7 @@ const attachmentSchema = z.object({
     // The stage the set belongs to; null lives for the whole event.
     StageID: id.nullish().transform(value => value ?? null),
     Scope: z.enum(["catalog", "event"]).catch("catalog"),
-    // Catalog version ordinal: the «версія N» label (Revision is the event's own counter).
+    // Catalog version ordinal: the “version N” label (Revision is the event's own counter).
     VersionNumber: z.number().int().default(0),
     LatestVersionID: id.nullish().transform(value => value ?? null),
     LatestVersionNumber: z.number().int().default(0),
@@ -135,7 +135,7 @@ async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, m
     return z.object({Data: schema}).parse(await response.json()).Data;
 }
 
-// What the «Додати з каталогу» list is narrowed by; every part is optional and they combine.
+// What the “Add from catalog” list is narrowed by; every part is optional and they combine.
 export type CatalogFilter = {
     search?: string; infrastructure?: InfrastructureFilter; tags?: string[];
     // Rounded average difficulty levels; "none" = a set without one.
@@ -166,7 +166,7 @@ export const deleteEventChallengeGroup = (eventID: string, groupID: string) => r
 export const getEventExerciseAttachments = (eventID: string) => request(eventID, "exercises", z.array(attachmentSchema));
 export const getEventBoardChallenges = (eventID: string, attachmentID: string) => request(eventID, `exercises/${attachmentID}/challenges`, z.array(challengeSchema));
 export const setEventChallengeGroup = (eventID: string, attachmentID: string, challenge: EventBoardChallenge, groupID: string | null) => request(eventID, `exercises/${attachmentID}/challenges/${challenge.ID}/relations`, z.null(), "PUT", {GroupID: groupID, PrerequisiteIDs: challenge.PrerequisiteIDs});
-// Complete order of one group's challenges across the event's sets (null = «Без групи»).
+// Complete order of one group's challenges across the event's sets (null = “No group”).
 export const reorderGroupChallenges = (eventID: string, groupID: string | null, challengeIDs: string[]) => request(eventID, "challenge-order", z.null(), "PUT", {GroupID: groupID, ChallengeIDs: challengeIDs});
 // Shows or hides a whole set (its tasks share one infrastructure).
 export const setEventExerciseVisibility = (eventID: string, attachmentID: string, published: boolean) => request(eventID, `exercises/${attachmentID}/visibility`, z.unknown(), "PUT", {Published: published}).then(() => undefined);
@@ -177,12 +177,12 @@ export const getPublishedExerciseChoices = (eventID: string, filter: CatalogFilt
 export const getPublishedExerciseTags = (eventID: string, prefix: string, limit = 50) => request(eventID, `exercise-catalog/tags?${new URLSearchParams({prefix, limit: String(limit)})}`, z.array(catalogTagSchema).nullish().transform(value => value ?? []));
 export const getPublishedExercisePreview = (eventID: string, versionID: string, variant = 0) => request(eventID, `exercise-catalog/${encodeURIComponent(versionID)}?variant=${variant}`, catalogPreviewSchema);
 export const attachEventExercise = (eventID: string, versionID: string, variantMode: 0 | 1, fixedVariantIndex: number | null) => request(eventID, "exercises", attachmentSchema, "POST", {ExerciseVersionID: versionID, VariantMode: variantMode, FixedVariantIndex: fixedVariantIndex});
-// «Оновити»: the latest published version; event settings carry over (409 1809 when a removed task has attempts).
+// “Reload”: the latest published version; event settings carry over (409 1809 when a removed task has attempts).
 // While the set's stage runs the server answers 409 1813 with the affected teams; recreateStands=true confirms recreating their stands.
 export const updateEventExercise = (eventID: string, attachmentID: string, versionID?: string, recreateStands = false) => request(eventID, `exercises/${attachmentID}/update`, attachmentSchema, "POST", {...(versionID ? {ExerciseVersionID: versionID} : {}), ...(recreateStands ? {RecreateStands: true} : {})});
-// «Налаштувати під захід»: the attachment switches to the event's own copy.
+// “Customize for this event”: the attachment switches to the event's own copy.
 export const forkEventExercise = (eventID: string, attachmentID: string, recreateStands = false) => request(eventID, `exercises/${attachmentID}/fork`, attachmentSchema, "POST", recreateStands ? {RecreateStands: true} : undefined);
-// «Повернути оригінал»: back to the catalog version the copy was made from.
+// “Restore the original”: back to the catalog version the copy was made from.
 export const revertEventExercise = (eventID: string, attachmentID: string, recreateStands = false) => request(eventID, `exercises/${attachmentID}/revert`, attachmentSchema, "POST", recreateStands ? {RecreateStands: true} : undefined);
 // With attempts the server wants confirm=true (409 1810) and keeps the attachment as detached.
 // Bulk actions on 1..200 of the event's sets: each set goes through the single action's rules; one failure never stops the

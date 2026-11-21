@@ -13,7 +13,7 @@ export function useCustomTemplates(eventID: string, channel: "email" | "in_app")
     return {query, rows: (query.data ?? []).filter(item => item.Channels.includes(channel))};
 }
 
-// «Створити шаблон» of a templates page: a new custom template (triggered templates come with the platform's actions).
+// “Create template” of a templates page: a new custom template (triggered templates come with the platform's actions).
 export function CustomTemplateCreate({basePath, canManage}: {basePath: string; canManage: boolean}) {
     if (canManage) return <Link className="ib-btn ib-btn--primary" href={`${basePath}/custom/new`}><Plus size={15} aria-hidden="true" /> {t("manage.customTemplates.create")}</Link>;
     return <span className="event-broadcast-heading-actions">

@@ -2,7 +2,7 @@ import type {ModeratorResultsTeam} from "@/api/manageResults";
 import {t} from "@/i18n/t";
 import type {TableFilter, TableSort} from "./tableFilterModel";
 
-// «Таблиця результатів» holds every team at once, so search, column filters,
+// “Results table” holds every team at once, so search, column filters,
 // sort and paging run in the browser over the moderator snapshot.
 
 export type ResultsStatus = "ranked" | "hidden" | "notAdmitted";

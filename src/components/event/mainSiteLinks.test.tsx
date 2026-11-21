@@ -45,7 +45,7 @@ function renderPage(props: Partial<React.ComponentProps<typeof ErrorPage>> = {})
 }
 
 describe("platform-branded error page", () => {
-    it("with the main site: the brand and «На головну» lead to it, the plain brand twin is hidden", () => {
+    it("with the main site: the brand and 'Home' lead to it, the plain brand twin is hidden", () => {
         setMainSite(MAIN);
         const footer = renderPage().querySelector("footer")!;
         const brands = visibleBrand(footer);
@@ -57,7 +57,7 @@ describe("platform-branded error page", () => {
         expect(home.getAttribute("href")).toBe(MAIN);
     });
 
-    it("without the main site: the brand is plain text and «На головну» is hidden, no visible link leads to `/` or nowhere", () => {
+    it("without the main site: the brand is plain text and 'Home' is hidden, no visible link leads to `/` or nowhere", () => {
         setMainSite(null);
         const footer = renderPage().querySelector("footer")!;
         const brands = visibleBrand(footer);
@@ -90,7 +90,7 @@ describe("NoAccessScreen", () => {
         return render(<QueryClientProvider client={client}><NoAccessScreen homeHref={homeHref} /></QueryClientProvider>).container;
     }
 
-    it("default home: both «На головну» links lead to the main site when it is set", async () => {
+    it("default home: both 'Home' links lead to the main site when it is set", async () => {
         setMainSite(MAIN);
         const root = renderNoAccess();
         await screen.findByRole("heading", {name: "Немає доступу"});
@@ -102,7 +102,7 @@ describe("NoAccessScreen", () => {
         }
     });
 
-    it("default home without the main site: neither «На головну» is visible, nothing visible leads to itself", async () => {
+    it("default home without the main site: neither 'Home' is visible, nothing visible leads to itself", async () => {
         setMainSite(null);
         const root = renderNoAccess();
         await screen.findByRole("heading", {name: "Немає доступу"});

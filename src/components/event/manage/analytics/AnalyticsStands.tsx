@@ -76,7 +76,7 @@ function TeamRows({teams}: {teams: StandTeam[]}) {
     </tr>)}</tbody>;
 }
 
-// «Стенди» (§6.5): the state of every team's stand, deploy time, failures and
+// “Stands” (§6.5): the state of every team's stand, deploy time, failures and
 // how fast they were resolved, lab resource peaks and VPN usage. Only for an
 // event with infrastructure.
 export function AnalyticsStands() {

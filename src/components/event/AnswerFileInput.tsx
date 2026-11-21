@@ -22,13 +22,13 @@ export function fileLimitMB(field: FormField): number {
     return Math.min(field.maxSizeMB ?? defaultFileMB, maxFileMB);
 }
 
-// «PDF, зображення · до 10 МБ» — what the question accepts.
+// “PDF, image · up to 10 MB” — what the question accepts.
 export function fileRulesText(field: FormField): string {
     const kinds = (field.fileTypes ?? []).map(kind => t(`manage.fields.fileKind.${kind}`)).join(", ");
     return t("forms.file.rules", {kinds, max: fileLimitMB(field)});
 }
 
-// The answer to a «Файл» question: our file picker; the file uploads as soon
+// The answer to a “File” question: our file picker; the file uploads as soon
 // as it is chosen and the answer keeps the server's reference to it.
 export function AnswerFileInput({id, field, value, onChange, upload, disabled = false}: {
     id: string;

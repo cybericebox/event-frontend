@@ -34,7 +34,7 @@ export function measureName(text: string, font: number): number {
     return measureContext.measureText(text).width;
 }
 
-// A block caption («Таблиця результатів»), or none when the block hides it.
+// A block caption (“Results table”), or none when the block hides it.
 export function LiveCaption({caption, metrics, children}: {caption: ReactNode; metrics: LiveMetrics; children?: ReactNode}) {
     return <h2 style={{height: metrics.caption * liveCaptionBlock}}>{caption}{children}</h2>;
 }

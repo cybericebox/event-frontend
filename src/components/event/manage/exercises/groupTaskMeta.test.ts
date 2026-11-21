@@ -12,7 +12,7 @@ describe("group order: difficulty and points of a task", () => {
         expect(groupTaskDifficulty(task({Snapshot: {name: "x", difficulty: "legendary", placeholders: []}}))).toBe("");
     });
 
-    it("shows the points teams score, with the plural of «бал»", () => {
+    it("shows the points teams score, with the correct Ukrainian plural of the word for ‘point’", () => {
         expect(groupTaskPoints(task(), staticEvent)).toBe("150 балів");
         expect(groupTaskPoints(task({EffectivePoints: 1}), staticEvent)).toBe("1 бал");
         expect(groupTaskPoints(task({EffectivePoints: 22}), staticEvent)).toBe("22 бали");

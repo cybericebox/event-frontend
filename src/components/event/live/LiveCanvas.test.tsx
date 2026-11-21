@@ -89,7 +89,7 @@ describe("live canvas widgets", () => {
         expect(container.querySelector(".live-timer strong")?.textContent).toMatch(/^29:5\d$/);
     });
 
-    it("shows «Завершено» instead of zeros after the finish", async () => {
+    it("shows 'Finished' instead of zeros after the finish", async () => {
         const finished = {...event, FinishTime: new Date(now - 60_000).toISOString()} as PublicEventInfo;
         const {container} = await mount(only({type: "timer"}), false, {on: finished});
         expect(container.querySelector(".live-timer strong")?.textContent).toBe("Завершено");

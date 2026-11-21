@@ -64,7 +64,7 @@ describe("AttachExerciseDialog", () => {
         await waitFor(() => expect(Object.keys(sessionStorage).filter(key => key.includes("exercise-attachment"))).toEqual([]));
     });
 
-    it("starts at «Немає» and disables sets that need infrastructure when the event has none", async () => {
+    it("starts at 'None' and disables sets that need infrastructure when the event has none", async () => {
         api.choices.mockResolvedValue([choice("11111111-1111-4111-8111-111111111111", "Test", true)]);
         renderDialog(false);
         expect(api.choices).toHaveBeenCalledWith("e", {search: "", infrastructure: "no", tags: [], difficulties: [], attached: "all"});
@@ -124,7 +124,7 @@ describe("AttachExerciseDialog", () => {
         await waitFor(() => expect(screen.queryByText(/У заходу немає інфраструктури/)).toBeNull());
     });
 
-    it("on «Усі» warns only when a listed set needs infrastructure", async () => {
+    it("on 'All' warns only when a listed set needs infrastructure", async () => {
         api.choices.mockResolvedValue([choice("a", "Plain", false)]);
         renderDialog(false);
         await infra("all");

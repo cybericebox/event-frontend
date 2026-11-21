@@ -197,7 +197,7 @@ export default async function RootLayout({
             <EventActionToaster />
             <PageScrollbar />
         </Providers>
-        {/* the consent panel is always mounted («Налаштування файлів cookie»); GA loads only when configured */}
+        {/* the consent panel is always mounted (“Cookie settings”); GA loads only when configured */}
         <Analytics gaId={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID} nonce={nonce} />
         </body>
         </html>

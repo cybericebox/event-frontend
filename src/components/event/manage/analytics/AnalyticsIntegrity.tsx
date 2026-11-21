@@ -156,7 +156,7 @@ function Evidence({item, canManage, onDismiss}: {item: IntegrityItem; canManage:
     </div>;
 }
 
-// «Доброчесність» (docs/ANTI-CHEAT.md): flagged solves with their evidence, hints
+// “Integrity” (docs/ANTI-CHEAT.md): flagged solves with their evidence, hints
 // for a person to review, never a verdict. Only for viewers with the sensitive
 // level; no IP or device data is used.
 export function AnalyticsIntegrity({initialFilters = {}}: {initialFilters?: IntegrityInitialFilters}) {

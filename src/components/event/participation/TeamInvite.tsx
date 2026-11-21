@@ -13,7 +13,7 @@ import {t} from "@/i18n/t";
 import {Card} from "./participationBlocks";
 import {joinLink, joinLinkValidity, rosterStatusLine} from "./participationModel";
 
-// «Перевипустити»: the old link stops working; the captain picks how long the new one lives.
+// “Reissue”: the old link stops working; the captain picks how long the new one lives.
 function RegenerateLinkDialog({open, onClose, onRegenerate}: {open: boolean; onClose: () => void; onRegenerate: (expiry: JoinLinkExpiry) => Promise<void>}) {
     const [expiry, setExpiry] = useState<JoinLinkExpiry>("none");
     const [busy, setBusy] = useState(false);

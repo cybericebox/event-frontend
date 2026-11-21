@@ -1,4 +1,4 @@
-/* «Доброчесність»: signal chips, the thresholds panel and the flagged-solve list. */
+/* “Integrity”: signal chips, the thresholds panel and the flagged-solve list. */
 .event-integrity__notice{margin:0;color:var(--ib-dim);font-size:var(--ib-fs-13)}
 .event-integrity__chips{display:flex;flex-wrap:wrap;gap:var(--ib-2)}
 .event-integrity__chip{display:inline-flex;align-items:center;gap:var(--ib-2);min-height:32px;padding:0 var(--ib-3);border:1px solid var(--ib-line);border-radius:999px;background:var(--ib-surface);color:var(--ib-ink);font:inherit;font-size:var(--ib-fs-13);cursor:pointer}

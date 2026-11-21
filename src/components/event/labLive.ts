@@ -50,8 +50,8 @@ function withdrawnLine(queue: StaffQueue): string {
     return t("lab.queue.reason.Withdrawn.retry", {attempt: queue.Attempt, time: formatClock(queue.RetryAt)});
 }
 
-// The staff line of a team's resource reservation: «… закінчується о 18:05: лабораторії буде видалено.» while the
-// ending is announced, «… закінчився, лабораторії видалено.» once it ended. Null otherwise. Never shown to participants.
+// The staff line of a team's resource reservation: “… ends at 18:05: the labs will be deleted.” while the
+// ending is announced, “… ended, the labs were deleted.” once it ended. Null otherwise. Never shown to participants.
 export function reservationLine(stand: {ReservationEndsAt: string | null; ReservationEnded: boolean}): string | null {
     if (stand.ReservationEnded) return t("lab.reservation.ended");
     if (!stand.ReservationEndsAt) return null;
@@ -77,7 +77,7 @@ export function failedDevices(devices: LiveDevice[]): LiveDevice[] {
 
 const UNITS: [Intl.RelativeTimeFormatUnit, number][] = [["day", 86400], ["hour", 3600], ["minute", 60], ["second", 1]];
 
-// «5 хвилин тому» in the active language (Ukrainian).
+// “5 minutes ago” in the active language (Ukrainian).
 export function agoText(iso: string, now = Date.now()): string {
     const seconds = Math.max(0, Math.round((now - new Date(iso).getTime()) / 1000));
     const [unit, size] = UNITS.find(([, size]) => seconds >= size) ?? UNITS[UNITS.length - 1];

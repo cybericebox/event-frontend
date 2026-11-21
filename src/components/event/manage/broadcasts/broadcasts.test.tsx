@@ -53,7 +53,7 @@ function wrap(node: React.ReactNode) {
 beforeEach(() => {manager.canManage = true;});
 afterEach(() => {cleanup(); router.push.mockClear(); vi.restoreAllMocks();});
 
-describe("Історія розсилок", () => {
+describe("Broadcast history", () => {
     it("lists the broadcasts with audience, counters, status and author", async () => {
         mockServer(() => ({Items: [broadcast(1), broadcast(2, {Channels: ["in_app"], Subject: "", Audience: {Kind: "teams", Roles: [], UserIDs: [], TeamIDs: [uuid(7), uuid(8)]}, Status: "sending"})], Total: 2}));
         wrap(<BroadcastHistory />);
@@ -95,7 +95,7 @@ describe("Історія розсилок", () => {
         expect(screen.getByRole("button", {name: "Спробувати ще раз"})).toBeTruthy();
     });
 
-    it("disables «Надіслати повідомлення» for a viewer and explains why", async () => {
+    it("disables 'Send a message' for a viewer and explains why", async () => {
         manager.canManage = false;
         mockServer(() => ({Items: [], Total: 0}));
         wrap(<BroadcastHistory />);
@@ -107,7 +107,7 @@ describe("Історія розсилок", () => {
     });
 });
 
-describe("Розсилка: деталі", () => {
+describe("Broadcast: details", () => {
     it("shows the facts and the recipients with the failures", async () => {
         mockServer(call => call.path.includes("/deliveries") ? [
             {DispatchID: uuid(20), RecipientUserID: uuid(30), RecipientEmail: "bad@example.com", DispatchStatus: "error", Channel: "email", TargetStatus: "error", Error: "550 rejected"},
@@ -141,7 +141,7 @@ function savedTemplate(n: number, patch: Record<string, unknown> = {}) {
 const inAppTemplates: unknown[] = [];
 const templateBase = {ScopeEventID: null, NotificationType: "participant.event.finished", Status: "published", PublishedAt: "2026-09-01T00:00:00Z", UpdatedByUserID: null, CreatedAt: "2026-09-01T00:00:00Z", UpdatedAt: "2026-09-01T00:00:00Z", Source: "platform"};
 
-describe("Нова розсилка", () => {
+describe("New broadcast", () => {
     beforeEach(() => {
         emailTemplates.splice(0, emailTemplates.length, {...templateBase, ID: uuid(61), Subject: "Привіт, {{.user_name}} {{.team_name}}", Preheader: "", Body: [{type: "button", label: "Відкрити {{.team_name}}", url: "https://x.test"}], Styling: {}});
         savedTemplates.splice(0, savedTemplates.length);
@@ -204,7 +204,7 @@ describe("Нова розсилка", () => {
         expect(router.push).not.toHaveBeenCalled();
     });
 
-    it("shows no errors before any input; «Надіслати» shows them and moves focus to the first one", async () => {
+    it("shows no errors before any input; 'Submit' shows them and moves focus to the first one", async () => {
         server();
         wrap(<BroadcastCompose />);
         const subject = await screen.findByRole("textbox", {name: "Тема листа"});

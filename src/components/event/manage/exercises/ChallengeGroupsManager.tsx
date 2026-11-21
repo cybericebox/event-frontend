@@ -33,7 +33,7 @@ import "./challengesManage.css";
 
 const noGroup = "none";
 
-// «Групи й порядок»: groups on the left (ordered), the selected group's tasks
+// “Groups and order”: groups on the left (ordered), the selected group's tasks
 // on the right (ordered inside the group). The participant board uses the same order.
 // Difficulty and points of a task, compact on the right of its row (under the name on a phone).
 function GroupTaskMeta({task, scoring}: {task: EventBoardChallenge; scoring: ManageScoring | undefined}) {
@@ -51,7 +51,7 @@ export function ChallengeGroupsManager() {
     // Points of a task that follows the event scoring come from the event's profile.
     const scoring = useQuery({queryKey: ["event-management-scoring", eventID], queryFn: () => getManageScoring(eventID), refetchOnWindowFocus: false});
     const [selectedID, setSelectedID] = useState<string | null>(null);
-    // «Додати групу» / «Перейменувати групу» dialog.
+    // “Add group” / “Rename group” dialog.
     const [naming, setNaming] = useSessionDraftState<{group: EventChallengeGroup | null; key: number} | null>("group-naming", null, {dirty: () => false});
     const [removing, setRemoving] = useState<EventChallengeGroup | null>(null);
     const [removeError, setRemoveError] = useState("");

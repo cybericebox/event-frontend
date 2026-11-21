@@ -17,7 +17,7 @@ import {isFileAnswer, uploadSelfAnswerFile, type AnswerFile} from "@/api/answerF
 // fillable ones: required fields the person still owes, fillable once even
 // when not editable); visibility is still worked out on the whole form, so a
 // condition on a locked question holds.
-// upload stores a «Файл» answer; by default the participant or captain uploads
+// upload stores a “File” answer; by default the participant or captain uploads
 // on the event site, staff pass the /manage upload. A cleared file is "".
 export function TeamFieldsInputs({form, answers, onChange, disabled, editableOnly = false, staffOnly = false, fillable = [], errors = {}, upload = (key, file) => uploadSelfAnswerFile("team", key, file)}: {
     form: ParticipantForm;

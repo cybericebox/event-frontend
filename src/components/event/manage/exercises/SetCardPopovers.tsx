@@ -25,7 +25,7 @@ export function InfrastructurePopover({resources, stand}: {resources: TaskResour
 
 type Profile = {Mode: number; MinPoints: number; MaxPoints: number};
 
-// «Статичне · 300 балів», «Динамічне · 500 → 100».
+// “Static · 300 points”, “Dynamic · 500 → 100”.
 function profileText(profile: Profile, points: number | null): string {
     if (profile.Mode !== 0) return t("manage.challenges.scoring.summaryDynamic", {max: profile.MaxPoints, min: profile.MinPoints});
     return points === null ? t("manage.exercises.scoringInfo.staticOwn") : t("manage.challenges.scoring.summaryStatic", {points});

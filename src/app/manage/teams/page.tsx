@@ -93,7 +93,7 @@ export default function ManageTeamsPage() {
     const [formAll, setFormAll] = useState<{busy: boolean; error: string} | null>(null);
     const fieldsQuery = useQuery({queryKey: ["event-management-team-fields", eventID], queryFn: () => getManageTeamFields(eventID), enabled: teamMode, refetchOnWindowFocus: false});
     const fields = formFields(fieldsQuery.data?.Document.blocks);
-    // «Не заповнено» exists once the organizer asked every team for the new required fields.
+    // “Not filled in” exists once the organizer asked every team for the new required fields.
     const askedEveryone = !!fieldsQuery.data?.RequireExisting;
     const specs: FilterSpec[] = [
         {key: "@name", label: t("manage.teams.col.name"), kind: "contains"},

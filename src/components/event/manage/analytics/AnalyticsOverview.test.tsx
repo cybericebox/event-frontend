@@ -56,7 +56,7 @@ function renderOverview() {
     return render(<QueryClientProvider client={new QueryClient({defaultOptions: {queries: {retry: false}}})}><AnalyticsOverview /></QueryClientProvider>);
 }
 
-describe("Огляд", () => {
+describe("Overview", () => {
     it("shows the counters, the activity chart and the feed of a running event", async () => {
         const calls = mockApi(overview());
         renderOverview();
@@ -117,7 +117,7 @@ async function strip(text: string) {
     return screen.getByRole("region", {name: "Стан заходу"});
 }
 
-describe("Огляд: status strip", () => {
+describe("Overview: status strip", () => {
     it("counts down to the start and shows the registration progress", async () => {
         mockApi(overview({Markers: {StartAt: future, FreezeAt: null, FinishAt: null}, Series: [], Feed: []}));
         renderOverview();
@@ -138,7 +138,7 @@ describe("Огляд: status strip", () => {
         expect(within(bar).getByRole("progressbar").getAttribute("aria-valuenow")).toBe("50");
     });
 
-    it("says «Завершено» with the duration after the finish, and keeps the manual refresh", async () => {
+    it("says 'Finished' with the duration after the finish, and keeps the manual refresh", async () => {
         const start = new Date(Date.now() - 5 * 3_600_000).toISOString();
         const finish = new Date(Date.now() - 3_600_000).toISOString();
         mockApi(overview({Final: true, Markers: {StartAt: start, FreezeAt: null, FinishAt: finish}}));
@@ -152,7 +152,7 @@ describe("Огляд: status strip", () => {
     });
 });
 
-describe("Огляд: cards", () => {
+describe("Overview: cards", () => {
     it("shows the leaders with the gap, the task snapshot and the engagement, each linking to its section", async () => {
         mockApi(overview());
         renderOverview();
@@ -226,7 +226,7 @@ describe("Огляд: cards", () => {
         expect(screen.queryByRole("region", {name: "Лідери"})).toBeNull();
     });
 
-    it("keeps the same cards before the start, with «Захід ще не почався» in leaders and engagement", async () => {
+    it("keeps the same cards before the start, with 'The event has not started yet' in leaders and engagement", async () => {
         mockApi(overview({Markers: {StartAt: future, FreezeAt: null, FinishAt: null}, Series: [], Feed: [], Leaders: [], RankedTeams: 0}));
         renderOverview();
         const leaders = await screen.findByRole("region", {name: "Лідери"});

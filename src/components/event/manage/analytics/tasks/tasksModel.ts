@@ -1,7 +1,7 @@
 import {noGroupID, type AnalyticsGroupRow, type AnalyticsTaskDetail, type AnalyticsTaskRow, type CalibrationVerdict} from "@/api/manageAnalyticsTasks";
 import {t} from "@/i18n/t";
 
-// Pure helpers of «Завдання» (§6.3): formatting, filters, totals and the chart
+// Pure helpers of “Task” (§6.3): formatting, filters, totals and the chart
 // options. Chart colours and axes follow the results chart.
 const axisText = "var(--ib-chart-axis)";
 const gridLine = "var(--ib-chart-grid)";
@@ -15,7 +15,7 @@ export const difficultyLabel = (difficulty: string) =>
 
 export const formatPercent = (rate: number) => `${Math.round(rate * 100)}%`;
 
-// 45 с, 12 хв, 2 год 05 хв, 1 д 3 год; "—" when there is nothing to measure.
+// 45 s, 12 min, 2 h 05 min, 1 d 3 h; "—" when there is nothing to measure.
 export function formatDuration(seconds: number | null): string {
     if (seconds === null) return "—";
     const total = Math.max(0, Math.round(seconds));

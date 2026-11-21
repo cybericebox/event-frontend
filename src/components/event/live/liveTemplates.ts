@@ -4,8 +4,8 @@ import {liveSceneLayout, withLiveScene, type LiveSceneKey} from "./liveScenes";
 
 // Ready screens (LIVE-CONSTRUCTOR §4), made for 1280×720 on a 12×8 grid: the
 // text floors of a projector hold in every block. A template fills one scene;
-// «Повний показ» fills the chain «Перед стартом» → «Табло і таймер» →
-// «Підсумки» at once.
+// “Full show” fills the chain “Before start” → “Board and timer” →
+// “Results” at once.
 
 function widget(type: LiveWidget["type"], x: number, y: number, w: number, h: number, props: LiveWidget["props"] = {}): LiveWidget {
     return {id: crypto.randomUUID(), type, x, y, w, h, props};
@@ -137,7 +137,7 @@ export const liveTemplates = {
 } satisfies Record<string, LiveTemplate>;
 export type LiveTemplateKey = keyof typeof liveTemplates;
 
-// Applies a template: «Повний показ» replaces every scene («Заморожено»
+// Applies a template: “Full show” replaces every scene (“Frozen”
 // gets a copy of the board); any other one replaces the canvas of `scene`, the
 // scene being edited. Screen settings stay; custom shapes of a replaced
 // canvas are dropped, as their placements belong to the old widgets.

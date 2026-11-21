@@ -33,7 +33,7 @@ const cellTime = new Intl.DateTimeFormat("uk-UA", {hour: "2-digit", minute: "2-d
 
 const chartStateOf = (pending: boolean, failed: boolean, hasData: boolean): ChartState => pending ? "loading" : failed ? "error" : hasData ? "ready" : "empty";
 
-// «Прогрес» (§6.4): the score over time of the leaders and chosen teams, the
+// “Progress” (§6.4): the score over time of the leaders and chosen teams, the
 // team × task matrix, the hourly activity heatmap and the idle teams.
 export function AnalyticsProgress() {
     const {event} = useManager();

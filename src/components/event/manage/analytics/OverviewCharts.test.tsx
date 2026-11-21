@@ -50,7 +50,7 @@ function renderOverview() {
 }
 
 describe("score option", () => {
-    it("draws smooth lines and marks «Зараз» only inside the period", () => {
+    it("draws smooth lines and marks 'Now' only inside the period", () => {
         const option = scoresOverviewOption(scores, Date.now());
         expect(option.series.every(series => series.smooth && series.step === undefined)).toBe(true);
         expect(option.series[0].markLine?.data.map(mark => mark.name)).toEqual(["Зараз"]);
@@ -66,7 +66,7 @@ describe("registrations option", () => {
     });
 });
 
-describe("Огляд: score and registration charts", () => {
+describe("Overview: score and registration charts", () => {
     it("draws the score dynamics of a running event next to the activity chart", async () => {
         mockApi({overview: overview(), scores});
         renderOverview();

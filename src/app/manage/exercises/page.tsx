@@ -5,7 +5,7 @@ import {ExercisesSection} from "@/components/event/manage/exercises/ExercisesSec
 
 export default async function ExercisesPage({searchParams}: {searchParams: Promise<{tab?: string}>}) {
     const {tab} = await searchParams;
-    // The hint-unlock log moved to «Журнал спроб».
+    // The hint-unlock log moved to “Attempts log”.
     if (tab === "unlocks") redirect("/manage/submissions?tab=hints");
     return <ExercisesTabs test={tab === "test"}>{tab === "test" ? <PreviewSettingsPage /> : <ExercisesSection />}</ExercisesTabs>;
 }

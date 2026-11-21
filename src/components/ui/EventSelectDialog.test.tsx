@@ -11,7 +11,7 @@ beforeAll(() => {
 });
 afterEach(cleanup);
 
-// The live editor's «Скопіювати з…» (owner, 2026-10-25): a choice in the menu opens a confirmation at once.
+// The live editor's “Copy from” (owner, 2026-10-25): a choice in the menu opens a confirmation at once.
 function CopyFrom() {
     const [asked, setAsked] = useState<string | null>(null);
     return <>

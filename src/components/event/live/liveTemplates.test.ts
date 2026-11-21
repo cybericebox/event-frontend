@@ -46,7 +46,7 @@ describe("live templates", () => {
         expect(frozen.widgets).toEqual(defaultLiveLayout.widgets);
     });
 
-    it("sets the whole chain with «Повний показ»: before, the board, its copy for the freeze, the finale", () => {
+    it("sets the whole chain with 'Full show': before, the board, its copy for the freeze, the finale", () => {
         const show = applyLiveTemplate({...withFormat, scenes: {...defaultLiveLayout.scenes, frozen: {grid: {cols: 12, rows: 8}, widgets: []}}}, "show", "finished");
         expect(liveSceneLayout(show, "frozen").widgets.map(widget => widget.type)).toEqual(show.widgets.map(widget => widget.type));
         expect(show.widgets.map(widget => widget.type)).toContain("solves");

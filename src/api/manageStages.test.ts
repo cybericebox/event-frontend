@@ -20,7 +20,7 @@ describe("manage stages API", () => {
         expect(await getManageStages("e1")).toEqual([]);
     });
 
-    it("creates, updates (partial, with «Закрити зараз»), and deletes", async () => {
+    it("creates, updates (partial, with 'Close now'), and deletes", async () => {
         fetchMock.mockImplementation(async () => reply({Data: stage}));
         await createManageStage("e1", {Name: "Один", OpensAt: stage.OpensAt, ClosesAt: stage.ClosesAt, Returnable: false});
         expect(fetchMock.mock.calls[0][1]).toMatchObject({method: "POST", body: JSON.stringify({Name: "Один", OpensAt: stage.OpensAt, ClosesAt: stage.ClosesAt, Returnable: false})});

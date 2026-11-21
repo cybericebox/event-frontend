@@ -5,7 +5,7 @@ import {richTextPlainText} from "@/components/event/content/richTextState";
 
 export type BoardSet = {attachment: EventExerciseAttachment; challenges: EventBoardChallenge[]};
 export type GroupTask = {challenge: EventBoardChallenge; attachment: EventExerciseAttachment};
-// groupID null is the «Без групи» bucket.
+// groupID null is the “No group” bucket.
 export type GroupBucket = {groupID: string | null; tasks: GroupTask[]};
 
 // Groups in their order (the board order of categories).
@@ -24,8 +24,8 @@ export function compareGroupTasks(a: GroupTask, b: GroupTask): number {
         || a.challenge.ID.localeCompare(b.challenge.ID);
 }
 
-// Every group's tasks across all active sets, plus the «Без групи» bucket.
-// A task whose group no longer exists falls into «Без групи».
+// Every group's tasks across all active sets, plus the “No group” bucket.
+// A task whose group no longer exists falls into “No group”.
 export function groupBuckets(groups: EventChallengeGroup[], sets: BoardSet[]): GroupBucket[] {
     const known = new Set(groups.map(group => group.ID));
     const buckets = new Map<string | null, GroupTask[]>([...orderedGroups(groups).map(group => [group.ID, []] as [string, GroupTask[]]), [null, []]]);

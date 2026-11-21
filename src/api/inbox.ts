@@ -20,7 +20,7 @@ const itemSchema = z.object({
     Category: z.enum(["requests", "personal", "activity"]).optional(),
     ActionRequired: z.boolean().optional(),
     ResolvedAt: z.string().nullable().optional(),
-    // An unknown future resolution still renders (the generic «Вирішено» line).
+    // An unknown future resolution still renders (the generic “Resolved” line).
     Resolution: z.string().nullable().optional().transform(value => value as InboxResolution | null | undefined),
     // True when the recipient may close this open request by hand (the server decides).
     Resolvable: z.boolean().optional(),

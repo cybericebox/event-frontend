@@ -16,7 +16,7 @@ afterEach(() => {
 const click = (name: string) => fireEvent.click(screen.getByRole("button", {name}));
 
 describe("ConsentBanner", () => {
-    it("banner: «Прийняти всі» grants analytics and hides", () => {
+    it("banner: 'Accept all' grants analytics and hides", () => {
         render(<ConsentBanner gaId="G-TEST" policyHref="/cookies" />);
         expect(screen.getByRole("region")).toBeTruthy();
         click("Прийняти всі");
@@ -53,7 +53,7 @@ describe("ConsentBanner", () => {
         expect(document.cookie).toContain("cib_consent=analytics:granted");
     });
 
-    it("the panel has only «Зберегти вибір» and «Прийняти всі»; saving with analytics off drops _ga", () => {
+    it("the panel has only 'Save choice' and 'Accept all'; saving with analytics off drops _ga", () => {
         document.cookie = "_ga=GA1.1.1; path=/";
         render(<ConsentBanner gaId="G-TEST" policyHref="/cookies" />);
         click("Налаштувати");

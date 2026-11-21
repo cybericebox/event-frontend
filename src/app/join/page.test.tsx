@@ -86,7 +86,7 @@ describe("join page", () => {
         expect(screen.queryByRole("button", {name: "Підтвердити участь"})).toBeNull();
     });
 
-    it("shows a neutral intro and one «Підтвердити участь» button on a bare visit with no fields", async () => {
+    it("shows a neutral intro and one 'Confirm participation' button on a bare visit with no fields", async () => {
         state.participation = block({Allowed: true, Reason: ""});
         view();
         expect(await screen.findByText("Реєстрація на захід «Олімпіада».")).toBeTruthy();
@@ -115,7 +115,7 @@ describe("join page", () => {
         expect(screen.getByRole("button", {name: "Надіслати заявку"})).toBeTruthy();
     });
 
-    it("labels the busy submit of a form «Надсилаємо…»", async () => {
+    it("labels the busy submit of a form 'Sending…'", async () => {
         state.participation = block({Allowed: true, Reason: ""});
         state.form = true;
         let finish!: (v: number) => void;

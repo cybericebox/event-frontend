@@ -21,7 +21,7 @@ function ChipRow<K>({label, buckets, name}: {label: string; buckets: StatBucket<
     </div>;
 }
 
-// «Основні завдання»: the event-wide figures of its tasks, above the resource plan. It renders from the same board
+// “Main challenges”: the event-wide figures of its tasks, above the resource plan. It renders from the same board
 // data as the sets (no loader of its own; a refetch keeps the previous figures) and stays hidden without sets.
 export function TaskStatsSummary({sets, scoring, stages, groups}: {sets: BoardSet[]; scoring: ManageScoring; stages: ManageStage[]; groups: EventChallengeGroup[]}) {
     if (sets.length === 0) return null;

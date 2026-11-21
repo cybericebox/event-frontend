@@ -10,7 +10,7 @@ import {TemplateStatusTag} from "./TemplateStatusTag";
 
 export type VersionRow = {ID: string; Status: "draft" | "published" | "unpublished"; UpdatedAt: string; PublishedAt: string | null; Heading: string};
 
-// «Версії шаблону»: the event's saved versions of one template. A non-draft
+// “Template versions”: the event's saved versions of one template. A non-draft
 // version can be restored as a new draft (the published one stays live until
 // the draft is published).
 export function TemplateVersions({versions, currentId, hrefFor, canManage, dirty, busy, onRestore}: {

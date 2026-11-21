@@ -15,8 +15,8 @@ function subscribePlain(onChange: () => void) {
     return () => query?.removeEventListener("change", onChange);
 }
 
-// «© year Cyber ICE Box · За підтримки кафедри … · ХНУРЕ» in the event footer, as on the landing:
-// the department and ХНУРЕ link out; on desktop our tooltip shows their full names (hover / focus).
+// “© year Cyber ICE Box · Supported by the department … · KhNURE” in the event footer, as on the landing:
+// the department and KhNURE link out; on desktop our tooltip shows their full names (hover / focus).
 // The department line shows only when NEXT_PUBLIC_SHOW_ICE_DEPARTMENT_SUPPORT is `true` (default off); otherwise the plain copyright shows.
 // Both are in the markup and src/styles/cfg.css shows one of them, so the server and the client render the same and nothing moves after load.
 export function PlatformCredit() {

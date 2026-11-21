@@ -1,7 +1,7 @@
 import type {BulkExerciseResult} from "@/api/manageChallenges";
 import {apiErrorMessage} from "@/api/apiErrors";
 
-// Requests go in small chunks so the busy label can count the progress («Публікуємо… 3/10»).
+// Requests go in small chunks so the busy label can count the progress (“Publishing… 3/10”).
 export const BULK_CHUNK = 5;
 
 export type BulkSkip = {id: string; reason: string};

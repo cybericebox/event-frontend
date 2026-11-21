@@ -192,13 +192,13 @@ describe("inbox", () => {
         expect(within(plain).queryByRole("link")).toBeNull();
     });
 
-    it("marks unread rows with the word «Нове» and no dot", async () => {
+    it("marks unread rows with the word 'New' and no dot", async () => {
         await openInbox();
         expect(document.querySelector(".event-notification-card__unread")).toBeNull();
         expect(screen.getAllByText(t("inbox.unreadItem")).length).toBe(2);
     });
 
-    it("a read open request still says «Потребує дії», is not «Нове», and the bell says what it counts", async () => {
+    it("a read open request still says 'Needs action', is not 'New', and the bell says what it counts", async () => {
         const alarm = {...lab("alarm", {Type: "resources.alarm.raised", Resolvable: true, ReadAt: "2026-10-01T10:05:00Z"})};
         api.getInboxSince.mockResolvedValue({...poll, Unread: 0, Counts: {All: 1, Requests: 1, Personal: 0, Activity: 0}});
         api.getInbox.mockResolvedValue({Items: [alarm], NextCursor: null});

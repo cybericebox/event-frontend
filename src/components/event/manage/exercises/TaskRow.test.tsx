@@ -28,7 +28,7 @@ describe("TaskRow", () => {
         const row = screen.getByRole("button", {expanded: false}).closest(".event-task__row")!;
         expect(row.textContent).toContain("SQL injection");
         expect(row.textContent).toContain("Знайдіть прапор у формі входу");
-        // Visibility is per set: no per-task «Показано» badge.
+        // Visibility is per set: no per-task “Shown” badge.
         expect(row.textContent).not.toContain("Показано");
         expect(row.textContent).toContain("Підказок: 1. Учасники їх бачать.");
         expect(row.querySelector(".event-task__hints.is-hidden")).toBeNull();
@@ -75,7 +75,7 @@ describe("TaskRow", () => {
         fireEvent.click(screen.getByRole("button", {expanded: false}));
         const kind = screen.getByRole("button", {name: "Оцінювання підзавдання SQL injection"});
         expect(kind.closest(".event-manage-field")?.querySelector(".event-field-required")).toBeNull();
-        // Radix menus open on pointerdown; pick «Статичне».
+        // Radix menus open on pointerdown; pick “Static”.
         fireEvent.pointerDown(kind, {button: 0, ctrlKey: false});
         fireEvent.click(screen.getByRole("menuitemradio", {name: "Статичне"}));
         const points = screen.getByRole("spinbutton", {name: /Бали за завдання/});

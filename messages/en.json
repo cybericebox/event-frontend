@@ -2878,6 +2878,7 @@
   "ui.datePicker.time": "Time",
   "ui.datePicker.value": "{date}, {time}",
   "ui.datePicker.zone": "{zone} ({offset})",
+  "ui.timePicker.chooseDateFirst": "Choose a date first to set the time.",
   "ui.timePicker.clear": "Clear time",
   "ui.datePicker.weekdays": "Mo,Tu,We,Th,Fr,Sa,Su",
   "vpn.error.failed": "Could not get the configuration. Try again.",

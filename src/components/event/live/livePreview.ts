@@ -1,6 +1,6 @@
 import type {LiveLayout} from "@/api/manageLive";
 
-// «Перегляд» (K1): the editor renders the screen at a target resolution and
+// “Preview” (K1): the editor renders the screen at a target resolution and
 // scales it into the stage, so the preview and its text warnings match that
 // screen. It changes the preview only, never the layout. A projector size
 // keeps the shape being edited (a 4:3 shape at 720p is 960×720); «LED» is a

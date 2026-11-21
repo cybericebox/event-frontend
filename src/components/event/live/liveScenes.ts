@@ -2,9 +2,9 @@ import type {LiveLayout, LiveScene} from "@/api/manageLive";
 import type {ManageResultsSnapshot} from "@/api/manageResults";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 
-// Event states and their screens (LIVE-CONSTRUCTOR §6.4). «Один екран для
-// всіх станів» (no `scenes`): the layout is shown in every state. «Окремий
-// екран для кожного стану»: «before», «frozen» and «finished» have their own
+// Event states and their screens (LIVE-CONSTRUCTOR §6.4). “One screen for
+// all states” (no `scenes`): the layout is shown in every state. “A separate
+// screen for each state”: «before», «frozen» and «finished» have their own
 // screen (grid, widgets, screen shapes) next to the layout itself, which is
 // «running». The screen settings — theme, aspect, screen, refresh — are
 // shared by all states.
@@ -13,9 +13,9 @@ export type LiveSceneKey = typeof liveSceneKeys[number];
 
 type Freeze = Pick<ManageResultsSnapshot["Freeze"], "Active" | "Applied"> | undefined;
 
-// «Заморожено» follows the frozen results the hall sees: with «Враховувати
-// заморожування» off the screen shows live results during the freeze period,
-// so it stays on «Триває». (Owner default 2026-10-19; set to false to switch
+// “Frozen” follows the frozen results the hall sees: with “Apply the
+// results freeze” off the screen shows live results during the freeze period,
+// so it stays on “In progress”. (Owner default 2026-10-19; set to false to switch
 // the scene for the whole freeze period instead.)
 const frozenSceneOnlyWhenApplied = true;
 
@@ -54,7 +54,7 @@ export function withLiveSceneMode(layout: LiveLayout, mode: LiveSceneMode, keep:
     return {...layout, grid: kept.grid, widgets: kept.widgets, formats: kept.formats, scenes: undefined};
 }
 
-// «Скопіювати з…»: the screen of `source` replaces the screen of `target`.
+// “Copy from”: the screen of `source` replaces the screen of `target`.
 export function withLiveSceneCopy(layout: LiveLayout, target: LiveSceneKey, source: LiveSceneKey): LiveLayout {
     const from = liveSceneLayout(layout, source);
     return withLiveScene(layout, target, {...liveSceneLayout(layout, target), grid: from.grid, widgets: from.widgets, formats: from.formats});
@@ -97,7 +97,7 @@ export function liveScenePreviewNow(key: LiveSceneKey, event: Pick<PublicEventIn
     return finish === null ? start + 60 * 60_000 : Math.min(start + 60 * 60_000, start + (finish - start) / 2);
 }
 
-// The preview of «Заморожено» shows frozen results (frozen ten minutes before
+// The preview of “Frozen” shows frozen results (frozen ten minutes before
 // the preview moment) when the real ones are not.
 export function liveScenePreviewResults(key: LiveSceneKey, results: ManageResultsSnapshot | undefined, now: number): ManageResultsSnapshot | undefined {
     if (key !== "frozen" || !results || results.Freeze.Applied) return results;

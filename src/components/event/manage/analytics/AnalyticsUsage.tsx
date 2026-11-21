@@ -113,7 +113,7 @@ function UserRows({users}: {users: UsageUser[]}) {
     })}</tbody>;
 }
 
-// «Використання»: per participant, whether the VPN is connected now (from the
+// “Usage”: per participant, whether the VPN is connected now (from the
 // last handshake), how many sessions and how long online, the VPN traffic, and
 // the web proxy use. Counts and times only. Only for an event with infrastructure.
 export function AnalyticsUsage() {

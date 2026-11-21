@@ -56,7 +56,7 @@ const revealModes = () => ([
     {value: "as_ready", label: t("manage.challenges.reveal.asReady"), note: t("manage.challenges.reveal.asReadyNote")},
 ] as const);
 
-// «Налаштування» of the challenges group: event scoring («Оцінювання»),
+// “Settings” of the challenges group: event scoring (“Scoring”),
 // hints and what the board shows.
 export function ChallengeSettings() {
     const {event, canManage} = useManager();

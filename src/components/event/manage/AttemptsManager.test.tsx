@@ -43,7 +43,7 @@ function renderManager(view: "attempts" | "hints" = "attempts") {
     return render(<QueryClientProvider client={new QueryClient({defaultOptions: {queries: {retry: false}}})}><AttemptsManager initialView={view} /></QueryClientProvider>);
 }
 
-describe("Журнал спроб", () => {
+describe("Attempts log", () => {
     afterEach(() => { cleanup(); manager.canManage = true; router.replace.mockClear(); });
 
     it("keeps the table headers and footer with the empty state inside the body", async () => {
@@ -87,7 +87,7 @@ describe("Журнал спроб", () => {
         expect(await screen.findByRole("button", {name: "Показати еталон"})).toBeTruthy();
     });
 
-    it("offers «Скасувати» next to «Зберегти рішення», and it closes the attempt", async () => {
+    it("offers 'Cancel' next to 'Save decision', and it closes the attempt", async () => {
         mockApi({Items: [attempt(1)], Total: 1});
         renderManager();
         const table = screen.getByRole("table");
@@ -121,7 +121,7 @@ describe("Журнал спроб", () => {
     });
 });
 
-describe("Журнал спроб: позначка доброчесності", () => {
+describe("Attempts log: integrity mark", () => {
     afterEach(() => { cleanup(); manager.canManage = true; });
     const flag = {TeamChallengeID: ids.challenge, TeamID: ids.team, ChallengeID: ids.challenge, Count: 2, Signals: ["too_fast", "burst"], CrossFlagTimes: ["2026-09-29T07:31:00.000Z"]};
     const page = {Items: [attempt(1, {Correct: true, AutomaticCorrect: true, Points: 100}), attempt(2, {EventChallengeID: "0190c6a4-0000-7000-8000-000000000009", TeamChallengeID: "0190c6a4-0000-7000-8000-00000000000a", Correct: true}), attempt(3)], Total: 3};

@@ -28,7 +28,7 @@ export function DetailRecipient({item}: {item: MailJournalItem}) {
 }
 
 // A send failure: the human text of a known SMTP error kind with the raw
-// server text under «Технічні деталі»; anything else is the raw text itself.
+// server text under “Technical details”; anything else is the raw text itself.
 export function MailErrorText({kind, code, raw, wrapKey, className}: {kind: string; code: string; raw: string; wrapKey?: string; className?: string}) {
     const line = smtpErrorLine(kind, code, raw);
     return <div className={className}>

@@ -1,4 +1,4 @@
-/* «Стенди»: the moderators' stand as its own block above the teams table; counters that never squeeze their labels. */
+/* “Stands”: the moderators' stand as its own block above the teams table; counters that never squeeze their labels. */
 .event-stands .event-stands__summary{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}
 .event-stands__moderators{display:grid;gap:var(--ib-3)}
 .event-stands__moderators-head{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:var(--ib-2) var(--ib-6)}

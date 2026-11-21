@@ -28,7 +28,7 @@ function inRange(value: number, min: number, max: number) {
 
 const chartSizes = Array.from({length: 10}, (_, index) => String(index + 1));
 
-// «Налаштування результатів»: who sees the ranking, the freeze before the
+// “Results settings”: who sees the ranking, the freeze before the
 // final, the chart and the table of the participant results page.
 export default function ResultsSettingsPage() {
     const {event, canManage} = useManager();

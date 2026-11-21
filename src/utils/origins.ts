@@ -28,6 +28,6 @@ export function eventOrigin(tag: string): string {
 // External links. The partner links are fixed and shown only when NEXT_PUBLIC_SHOW_ICE_DEPARTMENT_SUPPORT is true (src/styles/cfg.css); the WireGuard link has a default and can be overridden.
 export const partnerIceNureUrl = "https://ice.nure.ua/ua/";
 export const partnerNureUrl = "https://nure.ua";
-// «Доброчесність» on the event site (the menu item, its page, the attempt markers): NEXT_PUBLIC_SHOW_INTEGRITY=false hides it.
+// “Integrity” on the event site (the menu item, its page, the attempt markers): NEXT_PUBLIC_SHOW_INTEGRITY=false hides it.
 export const showIntegrity = process.env.NEXT_PUBLIC_SHOW_INTEGRITY?.trim() !== "false";
 export const wireguardInstallUrl = process.env.NEXT_PUBLIC_WIREGUARD_INSTALL_URL?.trim() || "https://www.wireguard.com/install/";

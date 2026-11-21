@@ -157,7 +157,7 @@ export default function ManageLabsPage() {
     }
     const labs = labsQuery.data;
     const ordered = orderStands(labs.Items);
-    // The moderators' stand has its own tools (VPN-конфіг, Завдання): a block above the table, the table lists the teams only.
+    // The moderators' stand has its own tools (VPN config, Tasks): a block above the table, the table lists the teams only.
     const moderators = ordered.find(stand => stand.Moderators) ?? null;
     const items = ordered.filter(stand => !stand.Moderators);
     const reasonCell = (stand: ManageStand) => {
@@ -166,7 +166,7 @@ export default function ManageLabsPage() {
     };
     const statusCell = (stand: ManageStand) => <><StatusBadge label={standStatusLabel[stand.Status]} tone={standStatusTone[stand.Status]} />{queueLineStaff(stand.Queue) && <small className="event-stands__queue" role="status">{queueLineStaff(stand.Queue)}{standQueueLabs(stand.Queue) > 1 ? ` ${t("manage.labs.queue.labs", {count: standQueueLabs(stand.Queue)})}` : ""}</small>}{stand.ImageWarning && <small className="event-stands__queue">{t("manage.labs.imageWarning")}</small>}{reservationLine(stand) && <small className="event-stands__queue" role="status">{reservationLine(stand)}</small>}</>;
     const labList = (stand: ManageStand) => <ul>{stand.Labs.map(lab => <li key={lab.ChallengeID}><span>{lab.ChallengeName || lab.ChallengeID.slice(0, 8)}</span><StatusBadge label={labStatusLabel[lab.Status]} tone={labStatusTone[lab.Status]} />{lab.Reason && <small className="event-stands__error">{standReasonText(lab.Reason)}</small>}</li>)}</ul>;
-    // «Деталі» is a read: the viewer opens it too (device actions inside stay with managers).
+    // “Details” is a read: the viewer opens it too (device actions inside stay with managers).
     const standActions = (stand: ManageStand) => <>
         {stand.Status !== "not_deployed" && <button className="ib-btn ib-btn--sm" type="button" onClick={() => setDetailTeam(stand.TeamID)}><Layers size={14} aria-hidden="true" />{t("manage.labs.detail.open")}</button>}
         {canManage && canRecreate(stand.Status) && <button className="ib-btn ib-btn--sm" type="button" disabled={recreating.includes(stand.TeamID)} onClick={() => {setConfirmError(""); setConfirm(stand);}}><RotateCcw size={14} aria-hidden="true" />{t("manage.labs.recreate.confirm")}</button>}

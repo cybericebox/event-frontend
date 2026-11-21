@@ -1,4 +1,4 @@
-/* «Учасники» and «Комунікації»: block heads, question grid, constant-size tables. */
+/* “Participants” and “Communications”: block heads, question grid, constant-size tables. */
 .event-analytics-people__title{display:flex;flex-wrap:wrap;align-items:baseline;gap:var(--ib-2)}
 .event-analytics-people__title p{flex-basis:100%;color:var(--ib-dim);font-size:var(--ib-fs-13)}
 .event-analytics-people__actions{display:flex;align-items:center;gap:var(--ib-2)}

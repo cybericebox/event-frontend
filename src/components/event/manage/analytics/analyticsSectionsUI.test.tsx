@@ -61,7 +61,7 @@ function stands(extra: Record<string, unknown> = {}) {
     };
 }
 
-describe("Стенди", () => {
+describe("Stands", () => {
     it("says so, in a block, when the event has no infrastructure", async () => {
         mockApi({stands: stands({Available: false, Teams: []})});
         renderWith(<AnalyticsStands />);
@@ -151,7 +151,7 @@ function mockIntegrity(options: {access?: unknown; data?: unknown; failList?: bo
 const listCalls = (calls: Recorded[]) => calls.filter(call => call.method === "GET" && /\/analytics\/integrity(\?|$)/.test(call.url));
 const lastList = (calls: Recorded[]) => new URL(listCalls(calls).at(-1)!.url).searchParams;
 
-describe("Доброчесність", () => {
+describe("Integrity", () => {
     it("is closed to viewers without the sensitive level and asks for nothing", async () => {
         const calls = mockIntegrity({access: {Sections: true, Sensitive: false}});
         renderWith(<AnalyticsIntegrity />);
@@ -435,7 +435,7 @@ function report(extra: Record<string, unknown> = {}) {
     };
 }
 
-describe("Звіт по заході", () => {
+describe("Event report", () => {
     it("waits for the finish and offers nothing to print or download", async () => {
         mockApi({report: {Available: false, EventName: "Cyber Cup", StartAt: past, FinishAt: null, GeneratedAt: past, Participants: {Registered: 0, Approved: 0, Pending: 0, Invited: 0, Active: 0}, Teams: {Total: 0, Admitted: 0, Incomplete: 0},
             Tasks: 0, Attempts: 0, Correct: 0, Solves: 0, HintsOpened: 0, HintPoints: 0}});

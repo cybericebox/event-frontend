@@ -39,7 +39,7 @@ const status = (label: string) => within(screen.getByRole("group", {name: "Ст�
 describe("the board filters", () => {
     const tasks = [task(1, 1), task(2, 1, {StageID: open.ID}), task(3, 2, {StageID: closed.ID, Closed: true}), task(4, 2, {StageID: closed.ID, Closed: true, SolvedAt: "2026-10-01T09:00:00Z"})];
 
-    it("defaults to «Усі»; «Відкриті» narrows to open tasks. One row of status segments, no «Активні» toggle", () => {
+    it("defaults to 'All'; 'Open' narrows to open tasks. One row of status segments, no 'Active' toggle", () => {
         renderBoard(tasks, [closed, open]);
         expect(status("Усі").getAttribute("aria-pressed")).toBe("true");
         expect(names()).toEqual(["Завдання 1", "Завдання 2", "Завдання 3", "Завдання 4"]);
@@ -52,7 +52,7 @@ describe("the board filters", () => {
         expect(screen.getByRole("region", {name: "Група 1"})).toBeTruthy();
     });
 
-    it("«Закриті» shows the closed stage's tasks, «Усі» everything, and the choice lives in the URL", () => {
+    it("'Closed' shows the closed stage's tasks, 'All' everything, and the choice lives in the URL", () => {
         renderBoard(tasks, [closed, open]);
         fireEvent.click(status("Закриті"));
         expect(names()).toEqual(["Завдання 3"]);
@@ -78,7 +78,7 @@ describe("the board filters", () => {
         expect(names()).toEqual(["Завдання 1", "Завдання 2"]);
     });
 
-    it("during a break with nothing active shows the break message in the centered empty state, and «Усі» still works", () => {
+    it("during a break with nothing active shows the break message in the centered empty state, and 'All' still works", () => {
         renderBoard([task(3, 2, {StageID: closed.ID, Closed: true})], [closed], "2026-10-01T10:30:00Z");
         fireEvent.click(status("Відкриті"));
         expect(screen.getByText(/^Перерва до \d{2}:\d{2}\. Завдання наступного етапу зʼявляться після її завершення\.$/)).toBeTruthy();

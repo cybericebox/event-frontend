@@ -10,7 +10,7 @@ data:
   DOMAIN: ""
   # Event sites are <tag>.<EVENT_DOMAIN>.
   # Parent domain of the theme/consent cookies (shared by all apps).
-  # REQUIRED: support mailbox of the «Надіслати відгук» (send feedback) link on every page.
+  # REQUIRED: support mailbox of the “Send feedback” (send feedback) link on every page.
   SUPPORT_EMAIL: "support@example.com"
   # Optional Google Analytics 4 measurement id (G-…). Empty → analytics off.
   GOOGLE_ANALYTICS_ID: ""

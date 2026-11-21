@@ -117,10 +117,10 @@ export function LiveEditor({event, canManage, data, screenID, screens, onScreenS
     const [linksOpen, setLinksOpen] = useState(false);
     const [warningsOpen, setWarningsOpen] = useState(false);
     // The last applied template and the layout it produced: the quiet
-    // «Шаблон: …» line says «змінено» once the layout moves away from it.
+    // “Template: …” line says “changed” once the layout moves away from it.
     const [applied, setApplied] = useState<{key: LiveTemplateKey; layout: string} | null>(null);
     const [confirmRemove, setConfirmRemove] = useState(false);
-    // «Скопіювати з…» waiting for a confirmation (the source state), and the
+    // “Copy from” waiting for a confirmation (the source state), and the
     // state whose screen stays when going back to one screen.
     const [copyFrom, setCopyFrom] = useState<LiveSceneKey | null>(null);
     const [keepScene, setKeepScene] = useState<LiveSceneKey | null>(null);
@@ -138,7 +138,7 @@ export function LiveEditor({event, canManage, data, screenID, screens, onScreenS
     // The palette: its search, and the block opened large before adding.
     const [paletteQuery, setPaletteQuery] = useState("");
     const [previewItem, setPreviewItem] = useState<LivePaletteItem | null>(null);
-    // «Перегляд» over the window, and the data it shows: sample or the event's own.
+    // “Preview” over the window, and the data it shows: sample or the event's own.
     const [showing, setShowing] = useState(false);
     const [showData, setShowData] = useState<LivePreviewData | null>(null);
     const lastEdit = useRef(0);
@@ -165,7 +165,7 @@ export function LiveEditor({event, canManage, data, screenID, screens, onScreenS
     const conflicts = useMemo(() => layoutConflicts(view), [view]);
     // The timer and the stage subtitle of the preview follow the real stages.
     const stages = useQuery({queryKey: ["event-management-stages", eventID], queryFn: () => getManageStages(eventID), refetchOnWindowFocus: false});
-    // «Враховувати заморожування» off: the hall sees live results, so «Заморожено» never shows.
+    // “Apply the results freeze” off: the hall sees live results, so “Frozen” never shows.
     const resultsSettings = useQuery({queryKey: ["event-management-results-settings", eventID], queryFn: () => getResultsSettings(eventID), refetchOnWindowFocus: false});
     const stagesList = stages.data;
     const warnings = useMemo(() => liveTextWarnings(shown, event.Name, stagesList), [shown, event.Name, stagesList]);
@@ -181,10 +181,10 @@ export function LiveEditor({event, canManage, data, screenID, screens, onScreenS
     // The preview shows a moment of the scene's state: its timer, stage and freeze.
     const previewNow = liveScenePreviewNow(scene, event, openedAt);
     const previewResults = liveScenePreviewResults(scene, shownResults, previewNow);
-    // «Перегляд» starts on real results when there are any; sample data on request.
+    // “Preview” starts on real results when there are any; sample data on request.
     const showSample = sample || showData === "sample";
     const showResults = liveScenePreviewResults(scene, showSample ? sampleResults : results.data, previewNow);
-    // The «зараз» mark follows the clock, checked every 15 s.
+    // The “now” mark follows the clock, checked every 15 s.
     const [clock, setClock] = useState(openedAt);
     useEffect(() => {const timer = setInterval(() => setClock(Date.now()), 15_000); return () => clearInterval(timer);}, []);
     const current = liveSceneState(event, results.data?.Freeze, clock);
@@ -232,10 +232,10 @@ export function LiveEditor({event, canManage, data, screenID, screens, onScreenS
         setError("");
     }
     // A change of the scene shown (its canvas or the shared screen settings);
-    // a scene «Як «Триває»» shows, and so changes, the running one.
+    // a scene “As “In progress”” shows, and so changes, the running one.
     function mutate(changed: LiveLayout) {
         mutateDoc(withLiveScene(doc, scene, changed));
-        // The open «Власна…» inputs follow a grid that grew or changed elsewhere.
+        // The open “Custom” inputs follow a grid that grew or changed elsewhere.
         if (customGrid && (changed.grid.cols !== layout.grid.cols || changed.grid.rows !== layout.grid.rows)) setCustomGrid({...changed.grid});
     }
     // An edited view of the current shape: the base itself, or the
@@ -250,7 +250,7 @@ export function LiveEditor({event, canManage, data, screenID, screens, onScreenS
     function updateProp(key: string, value: LivePropValue) {
         updateProps({[key]: value});
     }
-    // Several settings in one edit (one undo step), e.g. «Скинути кольори».
+    // Several settings in one edit (one undo step), e.g. “Reset colours”.
     function updateProps(changes: Record<string, LivePropValue>) {
         if (!selected) return;
         mutate({...layout, widgets: layout.widgets.map(item => {
@@ -369,7 +369,7 @@ export function LiveEditor({event, canManage, data, screenID, screens, onScreenS
         setTemplatesOpen(false);
         setCustomGrid(null);
         setFormat(doc.aspect);
-        // «Повний показ» fills every scene: the running one is the one to look at first.
+        // “Full show” fills every scene: the running one is the one to look at first.
         if (liveTemplates[key].scene === "all") setScene("running");
     }
     function switchScene(key: LiveSceneKey) {
@@ -477,7 +477,7 @@ export function LiveEditor({event, canManage, data, screenID, screens, onScreenS
             </div>
         </header>
         <div className="event-live-editor__toolbar">
-            {/* «Екран за станом заходу»: one screen for all states, or one per state (then the state tabs). */}
+            {/* “Screen by event state”: one screen for all states, or one per state (then the state tabs). */}
             <div className="event-live-editor__tool event-live-editor__tool--mode">
                 <ManageFieldLabel title={t("manage.live.scene.label")} help={t("manage.live.scene.help")} />
                 <EventSelect ariaLabel={t("manage.live.scene.label")} value={sceneMode} disabled={locked}
@@ -493,7 +493,7 @@ export function LiveEditor({event, canManage, data, screenID, screens, onScreenS
             {sceneMode === "separate" && <div className="event-live-scenes__tabs" role="tablist" aria-label={t("manage.live.scene.tabs")}>
                 {liveSceneKeys.map(key => {
                     const tab = (described?: string) => <button type="button" role="tab" aria-selected={scene === key} aria-describedby={described} className="event-live-scene" onClick={() => switchScene(key)}>{sceneName(key)}</button>;
-                    // The live state: a dot by its name; «зараз» on hover, focus or a tap on the dot.
+                    // The live state: a dot by its name; “now” on hover, focus or a tap on the dot.
                     return key === current
                         ? <EventTooltip key={key} content={t("manage.live.scene.now")}>{id => <span className="event-live-scene-cell is-now">{tab(id)}<span className="event-live-scene__now" aria-hidden="true" /></span>}</EventTooltip>
                         : <span key={key} className="event-live-scene-cell">{tab()}</span>;

@@ -45,7 +45,7 @@ export function FormOptionsEditor({blocks, index, disabled, onChange}: Props) {
     </div>;
 }
 
-// A «Файл» question: allowed formats (several may be ticked) and the size
+// A “File” question: allowed formats (several may be ticked) and the size
 // limit. One file per answer.
 export function FormFileSettings({blocks, index, disabled, onChange}: Props) {
     const field = fieldAt(blocks, index);
@@ -79,7 +79,7 @@ export function FormFileSettings({blocks, index, disabled, onChange}: Props) {
     </div>;
 }
 
-// «Дата / час» settings: the date, the time or both (at least one), and
+// “Date / time” settings: the date, the time or both (at least one), and
 // optional earliest and latest answers.
 export function FormDateSettings({blocks, index, disabled, onChange}: Props) {
     const field = fieldAt(blocks, index);
@@ -117,7 +117,7 @@ function conditionSummary(condition: NonNullable<FormField["condition"]>, source
     return t(keys[condition.operator], {question, value});
 }
 
-// «Показати питання»: the page constructor's compact «Показати блок» row. Collapsed
+// “Show question”: the page constructor's compact “Show block” row. Collapsed
 // it names the rule; open it edits the one condition on an earlier question.
 export function FormConditionEditor({blocks, index, disabled, onChange}: Props) {
     const field = fieldAt(blocks, index);

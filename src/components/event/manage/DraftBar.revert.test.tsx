@@ -9,7 +9,7 @@ beforeAll(() => {
 });
 afterEach(cleanup);
 
-describe("DraftBar «Скасувати» for unsaved edits", () => {
+describe("DraftBar 'Cancel' for unsaved edits", () => {
     it("asks before dropping the edits and keeps them on cancel", () => {
         const revert = vi.fn();
         render(<DraftBar state={{dirty: true, hasDraft: false, published: true}} busy={null} canManage invalid={false} onSave={vi.fn()} onPublish={vi.fn()} onRevertLocal={revert} />);

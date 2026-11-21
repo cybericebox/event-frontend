@@ -33,7 +33,7 @@ it("offers a visitor without an application to join", async () => {
     expect(screen.getByRole("link", {name: "Приєднатися"})).toBeTruthy();
 });
 
-it("names an application under review instead of «Приєднатися»", async () => {
+it("names an application under review instead of 'Join'", async () => {
     state.joinStatus = 1;
     view();
     expect(await screen.findByText("Заявка на участь очікує рішення організаторів.")).toBeTruthy();

@@ -9,7 +9,7 @@ import {useManager} from "./ManagerShell";
 import {t} from "@/i18n/t";
 import "./journal.css";
 
-// Shared by the «Журнал спроб» views (attempts and hints).
+// Shared by the “Attempts log” views (attempts and hints).
 
 const all = "all";
 

@@ -1,5 +1,5 @@
-/* Blocks — the page constructor. Event landing and every custom page (Правила, Питання, Новини, …) are built by
-   organizers from these blocks; only «Завдання» and «Результати» are fixed pages.
+/* Blocks — the page constructor. Event landing and every custom page (Rules, Questions, News, …) are built by
+   organizers from these blocks; only “Task” and “Results” are fixed pages.
 
    Stack:  <div class="ib-blocks"> <section class="ib-block ib-block-<type>" data-block="<type>">…</section> … </div>
    - every block is a full-width section, self-contained, stackable in any order;

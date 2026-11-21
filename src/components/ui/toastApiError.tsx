@@ -5,7 +5,7 @@ import {t} from "@/i18n/t";
 import {toastErrorWithAction} from "./EventActionToaster";
 
 // The error toast of a failed action: the mapped message (catalog text, the overloaded line, else the
-// fallback) and, when the server was only busy and the caller can repeat the same action, «Спробувати ще раз».
+// fallback) and, when the server was only busy and the caller can repeat the same action, “Try again”.
 export function toastApiError(error: unknown, fallback: string, retry?: () => void): string {
     const message = apiErrorText(error, fallback);
     return retry && isOverloadError(error) ? toastErrorWithAction(message, {label: t("error.overloaded.retry"), onClick: retry}) : toast.error(message);

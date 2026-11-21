@@ -16,8 +16,8 @@ import {liveCurrentStage, liveNextStage, liveStageNameChars, type LiveStage} fro
 import {liveMaxPoints, livePoints} from "./liveTable";
 import {liveSampleStages} from "./liveSample";
 
-// «Подіум»: places 2, 1, 3 side by side, the winner's tile the tallest and
-// in the accent; or «Картки»: places 1, 2, 3 as equal cards. `caption` is
+// “Podium”: places 2, 1, 3 side by side, the winner's tile the tallest and
+// in the accent; or “Cards”: places 1, 2, 3 as equal cards. `caption` is
 // null when the block hides it.
 export function LivePodium({widget, event, results, metrics, caption}: {widget: LiveWidget; event: PublicEventInfo; results?: ManageResultsSnapshot; metrics: LiveMetrics; caption: string | null}) {
     const highlight = liveHighlightOf(widget);
@@ -58,7 +58,7 @@ function LivePodiumCards({widget, top, results, metrics, empty, highlight}: {wid
     const [ref, size] = useElementSize<HTMLDivElement>();
     const points = widget.props.showPoints !== false;
     const ring = widget.props.showRing === true;
-    // «Кільце прапорців»: the solved share of the published tasks; needs the task count.
+    // “Flag ring”: the solved share of the published tasks; needs the task count.
     const tasks = results?.Tasks ?? 0;
     const flagsRing = widget.props.showFlagsRing === true && tasks > 0;
     const rings = Number(ring) + Number(flagsRing);
@@ -112,7 +112,7 @@ function LiveRing({share, size, label, flags = false, caption = null, captionSiz
     </figure>;
 }
 
-// «Факти»: large numbers over their labels, side by side.
+// “Facts”: large numbers over their labels, side by side.
 export function LiveFactsBlock({widget, event, results, metrics, caption}: {widget: LiveWidget; event: PublicEventInfo; results?: ManageResultsSnapshot; metrics: LiveMetrics; caption: string | null}) {
     const [ref, size] = useElementSize<HTMLDListElement>();
     const facts = liveFacts(liveFactItems(widget), event, results);
@@ -130,7 +130,7 @@ export function LiveFactsBlock({widget, event, results, metrics, caption}: {widg
 
 type StageRow = {stage: LiveStage; status: "done" | "now" | "next" | "later"};
 
-// «Етапи»: every stage with its time and status — done, running, next.
+// “Stages”: every stage with its time and status — done, running, next.
 export function LiveStagesBlock({widget, event, stages, now, metrics, caption, sample}: {
     widget: LiveWidget; event: PublicEventInfo; stages: LiveStage[]; now: number; metrics: LiveMetrics; caption: string | null; sample: boolean;
 }) {
@@ -152,7 +152,7 @@ export function LiveStagesBlock({widget, event, stages, now, metrics, caption, s
     </LiveList>;
 }
 
-// «Годинник»: the local time of the screen, with an optional label.
+// “Clock”: the local time of the screen, with an optional label.
 export function LiveClock({widget, now, metrics}: {widget: LiveWidget; now: number; metrics: LiveMetrics}) {
     const [ref, size] = useElementSize<HTMLDivElement>();
     const seconds = widget.props.showSeconds === true;

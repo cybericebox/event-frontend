@@ -18,7 +18,7 @@ function renderPage() {
 
 const subs = [subscription(FINISHED, "email"), subscription(REMINDER, "email", {Enabled: false})];
 
-describe("Електронні листи, список", () => {
+describe("Emails, list", () => {
     afterEach(() => { cleanup(); manager.canManage = true; vi.restoreAllMocks(); });
 
     it("lists every email with its status and a switch, like admin's list", async () => {

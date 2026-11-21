@@ -25,7 +25,7 @@ export function infrastructureMismatch(attachment: Pick<EventExerciseAttachment,
     return attachment.Infrastructure && !infrastructureAllowed;
 }
 
-// «версія N» is the catalog version ordinal, never the event's Revision counter.
+// “version N” is the catalog version ordinal, never the event's Revision counter.
 export function attachmentVersionLabel(attachment: Pick<EventExerciseAttachment, "VersionNumber">): string {
     return t("manage.exercises.version", {number: attachment.VersionNumber});
 }

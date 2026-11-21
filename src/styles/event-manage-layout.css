@@ -41,7 +41,7 @@ input[type="number"]::-webkit-inner-spin-button,input[type="number"]::-webkit-ou
 .event-resource-plan__scroll>.event-resource-plan__table{min-width:520px}
 
 /* Top bar: the account menu and the bell always stay on screen. The last crumb gives way first (ellipsis); below the
-   desktop width the setup chip keeps only «8/9» and «Тестувати як учасник» only its icon (the label stays its
+   desktop width the setup chip keeps only «8/9» and “Test as a participant” only its icon (the label stays its
    accessible name), so the crumb keeps room next to the sidebar on a tablet. */
 .event-manage-shell .ib-topbar__crumbs{flex:1 1 auto;min-width:0;overflow:hidden}
 .event-manage-shell .ib-topbar__actions{min-width:0}

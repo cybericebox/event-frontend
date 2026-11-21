@@ -94,8 +94,8 @@ function TasksTable({rows}: {rows: ReportTask[]}) {
     </ManageTable>;
 }
 
-// «Звіт по заході» (§6.8): the summary of a finished event. It is a normal
-// page on screen and a clean document in print: the browser's «Зберегти як PDF»
+// “Event report” (§6.8): the summary of a finished event. It is a normal
+// page on screen and a clean document in print: the browser's “Save as PDF”
 // makes the PDF (the backend has no PDF renderer); the tables come as a ZIP of CSV.
 export function AnalyticsReport() {
     const {event} = useManager();

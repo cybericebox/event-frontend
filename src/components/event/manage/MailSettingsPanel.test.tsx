@@ -35,7 +35,7 @@ function renderPanel() {
     return render(<QueryClientProvider client={new QueryClient({defaultOptions: {queries: {retry: false}}})}><MailSettingsPanel /></QueryClientProvider>);
 }
 
-describe("Пошта заходу: ліміти SMTP", () => {
+describe("Event mail: SMTP limits", () => {
     afterEach(cleanup);
 
     it("shows both limit fields as plain number fields without spinners", async () => {
@@ -81,7 +81,7 @@ describe("Пошта заходу: ліміти SMTP", () => {
     });
 });
 
-describe("Пошта заходу: збереження без миготіння", () => {
+describe("Event mail: saving without blinking", () => {
     afterEach(cleanup);
 
     function mockPending(mode: "ok" | "error") {

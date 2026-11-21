@@ -34,7 +34,7 @@
 .event-notification-card__heading{display:flex;align-items:flex-start;gap:var(--ib-2);min-width:0}
 .event-notification-card__heading p{min-width:0;flex:1;margin:0;color:var(--ib-ink);font-size:var(--ib-fs-14);font-weight:var(--ib-w-medium);line-height:1.35;overflow-wrap:anywhere}
 .event-notification-card__heading p.is-unread{font-weight:var(--ib-w-semibold)}
-/* Unread = semibold title plus the word «Нове»; an open request = «Потребує дії» (a typographic chip, no dot or edge). */
+/* Unread = semibold title plus the word “New”; an open request = “Needs action” (a typographic chip, no dot or edge). */
 .event-notification-card__tag{flex:none;padding:1px 6px;border-radius:4px;font-size:var(--ib-fs-12);font-weight:var(--ib-w-medium);line-height:1.4;white-space:nowrap}
 .event-notification-card__tag.is-new{background:var(--ib-soft);color:var(--ib-action)}
 .event-notification-card__tag.is-action{background:var(--ib-warn-bg);color:var(--ib-warn)}
@@ -52,7 +52,7 @@
 .event-notification-popin__track span{display:block;width:100%;height:100%;transform-origin:left;animation:event-notification-countdown linear forwards}
 @keyframes event-notification-countdown{to{transform:scaleX(0)}}
 @media(prefers-reduced-motion:reduce){.event-notification-popin__track span{animation:none}}
-/* Category tabs: the segmented control of the catalog's «Область» switch (exercises-frontend). */
+/* Category tabs: the segmented control of the catalog's “Scope” switch (exercises-frontend). */
 .event-notifications__tabs-wrap{flex:none;padding:0 var(--ib-3) var(--ib-3);border-bottom:1px solid var(--ib-line)}
 .event-notifications__tabs{display:flex;align-items:center;width:100%;height:40px;padding:4px;border-radius:var(--ib-r);background:var(--ib-hero)}
 .event-notifications__tabs button{display:inline-flex;flex:1 1 auto;min-width:0;align-items:center;justify-content:center;gap:4px;height:32px;padding:0 var(--ib-2);border:0;border-radius:calc(var(--ib-r) - 2px);background:transparent;color:var(--ib-dim);font:var(--ib-w-regular) var(--ib-fs-14)/1 var(--ib-font);cursor:pointer}
@@ -71,7 +71,7 @@
 .event-notification-card__actions .event-notifications__resolve:disabled{color:var(--ib-faint);cursor:not-allowed;text-decoration:none}
 .event-notifications__resolve .event-block-state{--event-block-state-h:0;flex:none;padding:0}
 .event-notifications__resolve .event-loading-logo{width:14px;height:14px}
-/* Event-site footer: «Ще N в інших заходах →» to the landing inbox. */
+/* Event-site footer: “N more in other events →” to the landing inbox. */
 .event-notifications__other{display:flex;flex:none;align-items:center;justify-content:center;gap:4px;padding:10px var(--ib-4);border-top:1px solid var(--ib-line);color:var(--ib-action);font-size:var(--ib-fs-14);font-weight:var(--ib-w-medium);text-decoration:none}
 .event-notifications__other:hover{background:var(--ib-soft)}
 .event-notifications__other:focus-visible{outline:2px solid var(--ib-action);outline-offset:-2px}

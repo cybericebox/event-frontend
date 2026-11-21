@@ -19,11 +19,11 @@ vi.mock("echarts-for-react", async () => {
 
 it("keeps a team hidden through zoom changes and refreshed chart options", () => {
     const view = showChart();
-    act(() => chart.onLegend!({selected: {Альфа: false, Бета: true}}));
+    act(() => chart.onLegend!({selected: {Alpha: false, Beta: true}}));
     fireEvent.click(screen.getByRole("button", {name: "Збільшити масштаб"}));
-    expect(chart.option!.legend.selected).toEqual({Альфа: false, Бета: true});
+    expect(chart.option!.legend.selected).toEqual({Alpha: false, Beta: true});
     view.rerender(<ScoreChart snapshot={{...snapshot, Revision: 2}} teamIDs={[]} startTime={new Date("2026-10-20T10:00:00Z")} finishTime={new Date("2026-10-20T12:30:00Z")} />);
-    expect(chart.option!.legend.selected).toEqual({Альфа: false, Бета: true});
+    expect(chart.option!.legend.selected).toEqual({Alpha: false, Beta: true});
 });
 
 const snapshot = {Scoreboard: [], Timeline: []} as unknown as ManageResultsSnapshot;

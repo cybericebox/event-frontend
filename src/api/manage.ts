@@ -143,7 +143,7 @@ export async function manageApiError(response: Response): Promise<ManageApiError
     return new ManageApiError(response.status, code, readRetryAfter(response), context, response.headers.get("X-Request-ID") ?? undefined);
 }
 
-// InfrastructureAllowed is the admin's creation-time decision; it gates «Стенди».
+// InfrastructureAllowed is the admin's creation-time decision; it gates “Stands”.
 // CanExport: CSV exports and report downloads (owner, write moderators, platform admins; never a viewer).
 const accessSchema = z.object({CanManage: z.boolean(), CanExport: z.boolean(), InfrastructureAllowed: z.boolean().default(false)});
 const nameSchema = z.object({Name: z.string()});

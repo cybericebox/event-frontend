@@ -160,7 +160,7 @@ it("freezes the chart range and own aggregate results without promising live poi
     expect(document.querySelector(".ib-page-header__sub")?.textContent).toBe("1 команда");
 });
 
-it("polls without a stream and explains «Автооновлення»", async () => {
+it("polls without a stream and explains 'Auto-refresh'", async () => {
     const opened = vi.fn();
     vi.stubGlobal("EventSource", class {constructor() {opened();}});
     state.event = event(-hour, "available");

@@ -13,10 +13,10 @@ function errorCode(error: unknown): number | undefined {
 }
 
 // The only load-error state inside a page or block: the EventErrorScreen warning mark
-// at block scale, a title (the context message), one line of help and «Спробувати ще
-// раз». Centered in the EventLoading / EmptyState block, so loading → error never jumps.
+// at block scale, a title (the context message), one line of help and “Try
+// again”. Centered in the EventLoading / EmptyState block, so loading → error never jumps.
 // A dead route without the shell uses EventErrorScreen instead. An overload answer (busy server) shows the overloaded line as the title.
-// `hint` replaces the help line where the block retries by itself («Повторимо через 10 с»).
+// `hint` replaces the help line where the block retries by itself (“Retrying in 10 s”).
 export function EventLoadError({message = t("error.load.title"), onRetry, error, compact = false, className = "", hint}: {
     message?: string;
     hint?: string;

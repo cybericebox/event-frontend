@@ -12,7 +12,7 @@ export function groupTaskDifficulty(task: GroupTask): string {
     return difficulties.has(difficulty) ? t(`manage.exercises.difficulty.${difficulty}`) : "";
 }
 
-// What a team scores for the task: the static points («150 балів»), or the dynamic range («динамічні 500→100»)
+// What a team scores for the task: the static points (“150 points”), or the dynamic range (“dynamic 500→100”)
 // of the task's own scoring or of the event's when the task follows it. Nothing until the event scoring is known.
 export function groupTaskPoints(task: GroupTask, scoring: ManageScoring | undefined): string {
     if (!scoring) return "";

@@ -58,7 +58,7 @@ const PREVIEW_NO_FREE_RESOURCES = new Set([2508, 2509, 2517]);
 // The caller's test-lab cap is reached (409, ErrTestDeployActiveExists): the error names the running labs.
 const TEST_LAB_LIMIT = 963;
 
-// At the test-lab cap nothing is replaced: the running labs are named, each with its own deliberate «Зупинити».
+// At the test-lab cap nothing is replaced: the running labs are named, each with its own deliberate “Stop”.
 function TestLabLimit({eventID, labs, onStopped}: {eventID: string; labs: {ID: string; Name: string; EventID?: string}[]; onStopped: () => void}) {
     const [stopping, setStopping] = useState<string | null>(null);
     const [failed, setFailed] = useState<unknown>(null);

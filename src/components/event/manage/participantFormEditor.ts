@@ -6,7 +6,7 @@ export function isFormField(block: FormBlock): block is FormField { return block
 
 export function isChoiceInput(input: FormField["input"]): boolean { return input === "select" || input === "multi_select"; }
 
-// «Файл» questions: the formats an organizer may allow and the size limits,
+// “File” questions: the formats an organizer may allow and the size limits,
 // the same as the backend (eventFormModel.MaxAnswerFileMB).
 export const fileKinds: FileKind[] = ["pdf", "image", "word", "excel", "powerpoint", "text", "archive"];
 export const officeFileKinds: FileKind[] = ["word", "excel", "powerpoint"];
@@ -24,7 +24,7 @@ function inputSettings(input: FormField["input"], field?: FormField): InputSetti
     return noSettings;
 }
 
-// «Дата / час» answers: a day ("YYYY-MM-DD"), a time of day ("HH:MM") or a
+// “Date / time” answers: a day ("YYYY-MM-DD"), a time of day ("HH:MM") or a
 // UTC ISO datetime, as the backend (eventFormModel.ParseDateAnswer) reads them.
 export function dateModeOf(field: FormField): "date" | "time" | "datetime" {
     return field.dateMode === "datetime" || field.dateMode === "time" ? field.dateMode : "date";
@@ -91,7 +91,7 @@ export function initialConditionValue(source: FormField): string | number | bool
     return "";
 }
 
-// Condition for a block switched to «За умовою»: the nearest earlier question.
+// Condition for a block switched to “Conditional”: the nearest earlier question.
 export function defaultCondition(blocks: FormBlock[], index: number): FormField["condition"] {
     const sources = conditionSources(blocks, index);
     const source = sources[sources.length - 1];

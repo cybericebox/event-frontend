@@ -5,7 +5,7 @@ import {REMINDER_MAX_DAYS, REMINDER_MIN_DAYS, validReminderDays} from "@/api/man
 import {t} from "@/i18n/t";
 import {ManageFieldLabel} from "../ManageFieldLabel";
 
-// «За скільки днів до старту»: the lead time of the start reminder. A value is
+// “Days before the start”: the lead time of the start reminder. A value is
 // saved when the field loses focus or Enter is pressed and it is a whole
 // number of days in range; the old value stays otherwise.
 export function ReminderDaysField({days, disabled, onCommit}: {days: number; disabled: boolean; onCommit: (days: number) => void}) {

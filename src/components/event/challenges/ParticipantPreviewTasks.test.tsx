@@ -192,12 +192,12 @@ it("opens a dynamic task that has a run, and one whose launch failed or ended so
 });
 
 // Test tasks are staff's own: they show whatever the simulated registration, team and event phase say, unless the staff
-// member switches «Показати завдання» off to see the real phase screens.
+// member switches “Show tasks” off to see the real phase screens.
 it.each([
     ["simulated registration not finished", {status: 0}],
     ["no simulated team in a team event", {participation: 1, team: null}],
     ["a team that is not formed before the start", {participation: 1, team: {Formed: false}}],
-])("shows the test tasks with the note when «Показати завдання» is on and %s", async (_name, patch) => {
+])("shows the test tasks with the note when 'Show tasks' is on and %s", async (_name, patch) => {
     Object.assign(switches, patch);
     mountBoard(dynamicTask("Web lab"));
     expect(await screen.findByRole("button", {name: /^Web lab/})).toBeTruthy();
@@ -205,7 +205,7 @@ it.each([
     expect(screen.queryByText(/Готуємо вашу участь/)).toBeNull();
 });
 
-it("shows the real phase screen when «Показати завдання» is off", async () => {
+it("shows the real phase screen when 'Show tasks' is off", async () => {
     Object.assign(switches, {tasks: false, participation: 1, team: {Formed: false}});
     mountBoard(dynamicTask("Web lab"));
     expect(await screen.findByText(/Готуємо вашу участь/)).toBeTruthy();

@@ -59,7 +59,7 @@ it("shows no participants-view banner while participants do not see the results"
     expect(screen.queryByRole("button", {name: "Відкрити підсумки"})).toBeNull();
 });
 
-it("offers «Відкрити підсумки» only during the freeze, not before it starts", async () => {
+it("offers 'Reveal results' only during the freeze, not before it starts", async () => {
     const later = new Date(Date.now() + hour).toISOString();
     renderPage(results({Freeze: {...frozenNow, FrozenAt: later, FinishAt: new Date(Date.now() + 2 * hour).toISOString(), Active: false}}));
     expect(await screen.findByText("Учасники бачать актуальні дані.")).toBeTruthy();

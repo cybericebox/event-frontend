@@ -9,7 +9,7 @@ import {CustomTemplateCreate, useCustomTemplates} from "@/components/event/manag
 import {useSubscriptionToggle} from "@/components/event/manage/notifications/useSubscriptionToggle";
 import {t} from "@/i18n/t";
 
-// «Електронні листи»: the emails of the event, like admin's template list.
+// “Emails”: the emails of the event, like admin's template list.
 export default function ManageEmailPage() {
     const {event, canManage} = useManager();
     const eventID = event.EventID;

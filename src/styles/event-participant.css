@@ -42,7 +42,7 @@
   .ib-cmodal__flag .ib-cmodal__row{align-items:stretch}
   .ib-cmodal__field{flex:none}
 }
-/* Running text with an inline number: a block, not the flex row of .ib-cmodal__hint (its gap split «балів .»). */
+/* Running text with an inline number: a block, not the flex row of .ib-cmodal__hint (its gap split “points”). */
 .event-cmodal__hint-mode{display:block;margin:0 0 var(--ib-2)}
 .event-cmodal__note{margin-top:18px}
 .event-cmodal__mods{margin-top:18px;padding:12px 14px;border-radius:var(--ib-r);background:var(--ib-warn-bg);color:var(--ib-ink);font-size:var(--ib-fs-13);line-height:1.5}
@@ -76,7 +76,7 @@ dialog.ib-modal .ib-icon-btn svg{width:18px;height:18px}
 .event-vpn-note{font-size:var(--ib-fs-12);color:var(--ib-dim)}
 .event-inline-icon{display:inline-block;width:14px;height:14px;vertical-align:-2px}
 
-/* ── «Моя участь» ────────────────────────────────────────────────────────── */
+/* ── “My participation” ────────────────────────────────────────────────────────── */
 .event-participation{width:100%}
 .event-part{padding:var(--ib-6) 0;border-top:1px solid var(--ib-line)}
 .event-part:first-of-type{border-top:0;padding-top:var(--ib-2)}
@@ -120,7 +120,7 @@ dialog.ib-modal .ib-icon-btn svg{width:18px;height:18px}
 .event-part__subhead{margin:var(--ib-6) 0 var(--ib-3);font-size:var(--ib-fs-14);font-weight:var(--ib-w-semibold);color:var(--ib-ink)}
 .event-part .ib-btn svg{width:14px;height:14px}
 
-/* ── countdown at the top of «Завдання» / «Результати» ───────────────────────
+/* ── countdown at the top of “Task” / “Results” ───────────────────────
    Compact block in the event theme: label left, large digits right. It takes
    its own height only (flex:none), so the empty state below keeps filling and
    centring the rest of the page. */
@@ -188,7 +188,7 @@ dialog.ib-modal .ib-icon-btn svg{width:18px;height:18px}
 .vpn-command__feedback{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 .vpn-command__error{display:block;margin-top:var(--ib-1);font-size:var(--ib-fs-12);color:var(--ib-danger)}
 
-/* Test-lab cap: the running labs, each with its own «Зупинити»; nothing is replaced on its own. */
+/* Test-lab cap: the running labs, each with its own “Stop”; nothing is replaced on its own. */
 .event-cmodal__limit{display:grid;gap:var(--ib-2);margin-top:var(--ib-2);font-size:var(--ib-fs-13);color:var(--ib-body)}
 .event-cmodal__limit p{margin:0}
 .event-cmodal__limit ul{display:grid;gap:var(--ib-2);margin:0;padding:0;list-style:none}

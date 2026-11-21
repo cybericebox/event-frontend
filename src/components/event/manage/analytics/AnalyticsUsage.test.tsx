@@ -45,7 +45,7 @@ function renderUsage() {
     return render(<QueryClientProvider client={new QueryClient({defaultOptions: {queries: {retry: false}}})}><AnalyticsUsage /></QueryClientProvider>);
 }
 
-describe("Використання", () => {
+describe("Usage", () => {
     it("shows when each participant was last online and last in a laboratory", async () => {
         mockApi(usage());
         renderUsage();

@@ -19,7 +19,7 @@ import {EventTooltip} from "@/components/ui/EventTooltip";
 
 const dateFormat = new Intl.DateTimeFormat("uk-UA", {dateStyle: "medium", timeStyle: "short"});
 
-// «Посилання для перегляду Live»: one link per screen for a projector or LED
+// “Live view links”: one link per screen for a projector or LED
 // PC that is not signed in; it opens that screen only. The full URL is shown
 // once, right after it is created or regenerated (only its hash is stored).
 export function LiveScreenLinksDialog({open, event, screenID, onClose}: {open: boolean; event: PublicEventInfo; screenID: string; onClose: () => void}) {

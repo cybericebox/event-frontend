@@ -1,7 +1,7 @@
 import {z} from "zod";
 import {analyticsRequest, periodQuery, wholeEvent, type AnalyticsPeriod} from "@/api/manageAnalytics";
 
-// «Завдання» and «Прогрес» (docs/EVENT-ANALYTICS.md §6.3, §6.4):
+// “Task” and “Progress” (docs/EVENT-ANALYTICS.md §6.3, §6.4):
 // GET /events/{id}/manage/analytics/tasks/* and progress/*. Every report but
 // the inactive teams takes the optional period `from`/`to`.
 

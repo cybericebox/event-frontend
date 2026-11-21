@@ -40,7 +40,7 @@ describe("a new page before any input", () => {
         expect(screen.getByText("Є незбережені зміни")).toBeTruthy();
     });
 
-    it("«Опублікувати» on an incomplete page shows the missing field's error and focuses it", async () => {
+    it("'Publish' on an incomplete page shows the missing field's error and focuses it", async () => {
         mount();
         const title = await screen.findByRole("textbox", {name: "Назва сторінки"});
         fireEvent.change(title, {target: {value: "Правила"}});

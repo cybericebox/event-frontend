@@ -43,7 +43,7 @@ describe("live timer by stages", () => {
         expect(liveTimerDigits(auto(at(1.5), [], null), at(1.5), true)).toBe("01:30:00");
     });
 
-    it("«До кінця етапу» and «До початку наступного етапу» sources", () => {
+    it("'Until the stage ends' and 'Until the next stage starts' sources", () => {
         const end = (now: number) => liveTimerState({source: "stage-end"}, event(), stages, now, null);
         const next = (now: number) => liveTimerState({source: "stage-next"}, event(), stages, now, null);
         expect(end(at(1)).mode === "countdown" && end(at(1))).toMatchObject({target: at(2)});

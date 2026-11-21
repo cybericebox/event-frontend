@@ -8,7 +8,7 @@ const wholeNumber = new Intl.NumberFormat("uk-UA");
 
 export const formatCount = (value: number) => wholeNumber.format(value);
 
-// 95 → «1 хв 35 с», 3700 → «1 год 1 хв».
+// 95 → “1 min 35 s”, 3700 → “1 h 1 min”.
 export function formatDuration(seconds: number | null): string {
     if (seconds === null) return none;
     const total = Math.max(0, Math.round(seconds));

@@ -3,7 +3,7 @@ import {ManageApiError, manageApiError} from "@/api/manage";
 import {ApiErrorCode} from "@/api/apiErrors";
 import {requireApiOrigin} from "@/utils/origins";
 
-// Site banners of an event (docs/BROADCASTS.md, «Банери»).
+// Site banners of an event (docs/BROADCASTS.md, “Banners”).
 
 const text = z.string().nullish().transform(value => value ?? "");
 

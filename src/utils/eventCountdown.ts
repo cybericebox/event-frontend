@@ -1,4 +1,4 @@
-// Participant countdown on «Завдання» and «Результати»: which phase the schedule
+// Participant countdown on “Task” and “Results”: which phase the schedule
 // is in now, and how much time is left. Pure functions of the event info and the
 // clock, so the page can tick them every second.
 
@@ -20,7 +20,7 @@ export type CountdownPhase =
 
 // The start countdown runs until the start; the finish countdown only during the
 // last FinishCountdownMinutes before the finish (never before the start), or from the start of the
-// event in the from_start mode; at the finish the block turns into «Захід завершено».
+// event in the from_start mode; at the finish the block turns into “The event has finished”.
 // null = nothing to show.
 export function countdownPhase(event: CountdownSchedule, now: number): CountdownPhase | null {
     const start = Date.parse(event.StartTime);
