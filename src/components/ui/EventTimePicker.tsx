@@ -52,7 +52,7 @@ export function EventTimePicker({value, onChange, ariaLabel, id, disabled = fals
         }
     }
 
-    return <div {...aria} className="event-date-picker__time event-time-picker" role="group" aria-label={ariaLabel} id={id}>
+    return <div {...aria} className="event-date-picker__time event-time-picker" data-disabled-hint={disabled ? t("ui.timePicker.chooseDateFirst") : undefined} role="group" aria-label={ariaLabel} id={id}>
         {(["hour", "minute"] as Part[]).map((part, index) => <span className="event-date-picker__part" key={part}>
             {index > 0 && <span aria-hidden="true">:</span>}
             <input aria-label={t(`ui.datePicker.${part}`)} inputMode="numeric" autoComplete="off" maxLength={2} placeholder="--" value={shown[part]} disabled={disabled}

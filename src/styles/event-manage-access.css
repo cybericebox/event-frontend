@@ -36,7 +36,7 @@
 .event-date-picker__time:has(.event-date-picker__time-hint),.event-date-picker__time:has(input:disabled){display:grid;justify-items:start;gap:4px}
 .event-date-picker__time-hint{max-width:220px;color:var(--ib-dim);font-size:var(--ib-fs-12);line-height:var(--ib-lh-ui)}
 .event-date-picker__time:has(input:disabled) input,.event-date-picker__time:has(input:disabled)>span:nth-of-type(2){display:none}
-.event-date-picker__time:has(input:disabled)::after{content:"Спочатку оберіть дату, щоб вказати час.";max-width:220px;color:var(--ib-dim);font-size:var(--ib-fs-12);line-height:var(--ib-lh-ui)}
+.event-date-picker__time:has(input:disabled)::after{content:attr(data-disabled-hint);max-width:220px;color:var(--ib-dim);font-size:var(--ib-fs-12);line-height:var(--ib-lh-ui)}
 .event-date-picker__time input{width:44px;height:32px;padding:0 var(--ib-1);border:1px solid var(--ib-line);border-radius:var(--ib-r);background:var(--ib-surface);color:var(--ib-ink);font:inherit;font-variant-numeric:tabular-nums;text-align:center}
 .event-date-picker__actions .ib-btn{min-height:32px;padding:0 var(--ib-3);font-size:var(--ib-fs-12)}
 @media(max-width:640px){.event-manage-choice-group{grid-template-columns:minmax(0,1fr)}}
