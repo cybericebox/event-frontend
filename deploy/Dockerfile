@@ -38,7 +38,7 @@ RUN npm run build \
 FROM mirror.gcr.io/library/node:26.10.0-alpine@sha256:0b36e8c136b94cd4fcf02188228e76c31ad5872eef3fec8cbd2eee500cfd9e80 AS target-node
 
 # The node binary of the base image, without its symbol table and DWARF (about 22 MB); the runtime needs neither.
-FROM mirror.gcr.io/library/alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6 AS node-bin
+FROM mirror.gcr.io/library/alpine:3.24.4@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf AS node-bin
 RUN apk add --no-cache binutils
 COPY --from=target-node /usr/local/bin/node /node
 RUN strip --strip-all /node && /node -e "process.exit(0)"
@@ -46,7 +46,7 @@ RUN strip --strip-all /node && /node -e "process.exit(0)"
 # Production image, copy all the files and run next. It is plain alpine plus the node binary of the base image:
 # the base image's npm, corepack and yarn are not needed to run server.js. The alpine digest is the one the
 # laboratory Dockerfile pins.
-FROM mirror.gcr.io/library/alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6 AS runner
+FROM mirror.gcr.io/library/alpine:3.24.4@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf AS runner
 RUN apk add --no-cache libstdc++ nginx tini gettext-envsubst
 COPY --from=node-bin /node /usr/local/bin/node
 WORKDIR /app
