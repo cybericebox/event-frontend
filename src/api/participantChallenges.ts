@@ -203,11 +203,11 @@ export async function getOwnChallengeLab(eventID: string, challengeID: string): 
     return z.object({Data: LabRuntimeSchema}).parse(await response.json()).Data;
 }
 
-// The link that opens one web device of a task's lab: https://<device>-<code>.<base>/_auth?t=...
-// It is short-lived and single use, so it is fetched on every click and never kept.
-// The lab proxy turns it into its own cookie on the lab domain; the platform sets none.
+// What opens one web device of a task's lab: the endpoint https://<device>-<code>.<base>/_auth (no query) and a grant.
+// The grant is short-lived, so it is fetched on every click and never kept. The page posts it in a form body
+// (never in a URL) and the lab proxy turns it into its own cookie on the lab domain; the platform sets none.
 // Staff testing tasks as the moderators team use the manage route.
-export async function openLabLink(eventID: string, challengeID: string, device: string, port: number, moderators = false, expectedLab?: Pick<LabLifecycle, "ID" | "Revision">): Promise<{url: string; expiresAt: number; labID: string | null; revision: string | null}> {
+export async function openLabLink(eventID: string, challengeID: string, device: string, port: number, moderators = false, expectedLab?: Pick<LabLifecycle, "ID" | "Revision">): Promise<{url: string; grant: string; expiresAt: number; labID: string | null; revision: string | null}> {
     const path = moderators
         ? `${requireApiOrigin()}/api/events/${encodeURIComponent(eventID)}/manage/labs/moderators/challenges/${encodeURIComponent(challengeID)}`
         : `${baseUrl(eventID)}/${encodeURIComponent(challengeID)}`;
@@ -218,12 +218,12 @@ export async function openLabLink(eventID: string, challengeID: string, device: 
     });
     if (!response.ok) throw await failure(response);
     const schema = z.object({
-        URL: z.string(), ExpiresAt: z.string(),
+        URL: z.string().refine(value => !/[?#]/.test(value)), Grant: z.string().min(1), ExpiresAt: z.string(),
         LabID: id.nullish().transform(value => value ?? null),
         Revision: revisionSchema.nullish().transform(value => value ?? null),
     }).refine(data => !expectedLab || (data.LabID === expectedLab.ID && data.Revision === expectedLab.Revision));
     const data = z.object({Data: schema}).parse(await response.json()).Data;
-    return {url: data.URL, expiresAt: new Date(data.ExpiresAt).getTime(), labID: data.LabID, revision: data.Revision};
+    return {url: data.URL, grant: data.Grant, expiresAt: new Date(data.ExpiresAt).getTime(), labID: data.LabID, revision: data.Revision};
 }
 
 // Idempotent per team: a repeat returns the first unlock. Cost is 0 once solved or finished.

@@ -43,7 +43,7 @@ describe("installation settings parity", () => {
     it("sources the rule file in the image and runs the check in CI", () => {
         expect(read("deploy/Dockerfile")).toContain("COPY deploy/cfg-check.sh /usr/local/lib/cfg-check.sh");
         expect(read("deploy/entrypoint.sh")).toContain(". /usr/local/lib/cfg-check.sh");
-        expect(read(".github/workflows/test.yml")).toContain("npm run check:cfg");
+        expect(read(".github/workflows/test.yml")).toContain("mise run check:cfg");
         expect(read("package.json")).toContain('"check:cfg": "node scripts/check-cfg.mjs"');
     });
 
