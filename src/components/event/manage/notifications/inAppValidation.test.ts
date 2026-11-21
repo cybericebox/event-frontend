@@ -16,6 +16,8 @@ describe("in-app template validation", () => {
     it("needs a title and a text that is more than markup", () => {
         expect(inAppValidation({...draft, Title: "  "})).toBe("Заповніть заголовок.");
         expect(inAppValidation({...draft, Body: "<strong></strong><br>"})).toBe("Заповніть текст сповіщення.");
+        expect(inAppValidation({...draft, Body: "<<b></b>b>"})).toBe("");
+        expect(inAppValidation({...draft, Body: "<<b></b><br>"})).toBe("Заповніть текст сповіщення.");
     });
 
     it("checks the button and the pop-in time", () => {
