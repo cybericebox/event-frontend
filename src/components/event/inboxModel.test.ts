@@ -104,6 +104,8 @@ describe("inbox model", () => {
     expect(inbox.safeHref(" #top ")).toBe("#top")
     expect(inbox.safeHref("mailto:a@b.c")).toBe("mailto:a@b.c")
     expect(inbox.safeHref("//evil.example")).toBe(null)
+    expect(inbox.safeHref("/\\evil.example")).toBe(null)
+    expect(inbox.safeHref("/\t/evil.example")).toBe(null)
     expect(inbox.safeHref("javascript:alert(1)")).toBe(null)
     expect(inbox.safeHref("")).toBe(null)
   })

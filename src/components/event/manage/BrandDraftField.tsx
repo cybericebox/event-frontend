@@ -9,6 +9,7 @@ import {fitImage, fitImageMaxSide} from "@/utils/fitImage";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 import {ManageFieldLabel} from "./ManageFieldLabel";
 import {t} from "@/i18n/t";
+import {safeMediaSrc} from "@/utils/safeUrl";
 import {EventButton} from "@/components/ui/EventButton";
 
 type Kind = "preview" | "logo" | "favicon";
@@ -59,7 +60,7 @@ export function useBrandDraft(eventID: string, kind: Kind, currentURL: string, m
         return () => window.clearTimeout(timer);
     }, [draft.action, draft.uploadedAt]);
     const expired = draft.action === "replace" && (!draft.uploadedAt || now - draft.uploadedAt >= 24 * 60 * 60 * 1000 - 60_000);
-    const source = draft.action === "replace" ? draft.previewURL ?? "" : draft.action === "remove" ? "" : savedURL?.eventID === eventID ? savedURL.url : currentURL;
+    const source = safeMediaSrc(draft.action === "replace" ? draft.previewURL ?? "" : draft.action === "remove" ? "" : savedURL?.eventID === eventID ? savedURL.url : currentURL);
     const change: BrandAssetChange = {Action: draft.action, ...(draft.action === "replace" ? {FileID: draft.fileID} : {})};
     return {source, change, dirty: draft.action === "replace" || draft.action === "remove" && !!(savedURL?.eventID === eventID ? savedURL.url : currentURL), uploading, expired, fileName: draft.fileName, error: expired ? t("manage.appearance.brand.draftExpired") : error, select, reset, saved};
 }
