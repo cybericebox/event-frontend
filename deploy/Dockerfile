@@ -1,6 +1,6 @@
 # The standalone runtime is JavaScript (sharp is excluded in next.config.mjs).
 # Install and compile natively: emulated ARM64 npm can crash QEMU and hang.
-FROM --platform=$BUILDPLATFORM mirror.gcr.io/library/node:26.10.0-alpine@sha256:0b36e8c136b94cd4fcf02188228e76c31ad5872eef3fec8cbd2eee500cfd9e80 AS base
+FROM --platform=$BUILDPLATFORM mirror.gcr.io/library/node:26.13.1-alpine@sha256:6bd9ab43c0ec0190ca7b2d193906cb8b7edf6e7f4afa43ddeccd6452710bffb5 AS base
 
 FROM base AS deps
 WORKDIR /app
@@ -35,11 +35,12 @@ RUN npm run build \
        fi
 
 # The runtime binary must still match the requested output architecture.
-FROM mirror.gcr.io/library/node:26.10.0-alpine@sha256:0b36e8c136b94cd4fcf02188228e76c31ad5872eef3fec8cbd2eee500cfd9e80 AS target-node
+FROM mirror.gcr.io/library/node:26.13.1-alpine@sha256:6bd9ab43c0ec0190ca7b2d193906cb8b7edf6e7f4afa43ddeccd6452710bffb5 AS target-node
 
 # The node binary of the base image, without its symbol table and DWARF (about 22 MB); the runtime needs neither.
 FROM mirror.gcr.io/library/alpine:3.24.4@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf AS node-bin
-RUN apk add --no-cache binutils
+# libatomic: the amd64 node binary links it since node 26.13.
+RUN apk add --no-cache binutils libatomic
 COPY --from=target-node /usr/local/bin/node /node
 RUN strip --strip-all /node && /node -e "process.exit(0)"
 
@@ -47,7 +48,7 @@ RUN strip --strip-all /node && /node -e "process.exit(0)"
 # the base image's npm, corepack and yarn are not needed to run server.js. The alpine digest is the one the
 # laboratory Dockerfile pins.
 FROM mirror.gcr.io/library/alpine:3.24.4@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf AS runner
-RUN apk add --no-cache libstdc++ nginx tini gettext-envsubst
+RUN apk add --no-cache libstdc++ libatomic nginx tini gettext-envsubst
 COPY --from=node-bin /node /usr/local/bin/node
 WORKDIR /app
 
