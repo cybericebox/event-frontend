@@ -8,6 +8,7 @@ import {liveSampleResults} from "./liveSample";
 import type {ManageResultsSnapshot} from "@/api/manageResults";
 import type {LiveStage} from "./liveStages";
 import en from "../../../../messages/en.json";
+import uk from "../../../../messages/uk.json";
 
 vi.mock("./LiveQR", () => ({LiveQR: () => null}));
 afterEach(() => {cleanup(); vi.useRealTimers(); vi.unstubAllGlobals();});
@@ -101,6 +102,28 @@ describe("live canvas widgets", () => {
     it("says there are no other teams when every team is on the podium", async () => {
         const {container} = await mount(only({type: "table", w: 4, h: 4, props: {offset: 3}}), false, {results: board(2)});
         expect(container.querySelector(".live-list .ib-empty")?.textContent).toContain("Інших команд на табло поки немає.");
+    });
+
+    it("says there are no other participants when every participant of an individual event is on the podium", async () => {
+        const solo = {...event, Participation: 0} as PublicEventInfo;
+        const {container} = await mount(only({type: "table", w: 4, h: 4, props: {offset: 3}}), false, {results: board(2), on: solo});
+        expect(container.querySelector(".live-list .ib-empty")?.textContent).toContain("Інших учасників на табло поки немає.");
+    });
+
+    // The owner's approved texts: one key per format, no "teams (participants)" wording built into one string.
+    it("keeps a separate team and participant text for each empty state, in uk and en", () => {
+        const texts = {
+            "live.chart.empty": ["Графік зʼявиться, щойно на табло будуть команди.", "The chart appears as soon as there are teams on the board."],
+            "live.chart.emptyParticipants": ["Графік зʼявиться, щойно на табло будуть учасники.", "The chart appears as soon as there are participants on the board."],
+            "live.table.empty": ["Команд на табло поки немає.", "No teams on the board yet."],
+            "live.table.emptyParticipants": ["Учасників на табло поки немає.", "No participants on the board yet."],
+            "live.table.emptyAfterPodium": ["Інших команд на табло поки немає.", "No other teams on the board yet."],
+            "live.table.emptyAfterPodiumParticipants": ["Інших учасників на табло поки немає.", "No other participants on the board yet."],
+        } as const;
+        for (const [key, [ukText, enText]] of Object.entries(texts)) {
+            expect(uk[key as keyof typeof uk]).toBe(ukText);
+            expect(en[key as keyof typeof en]).toBe(enText);
+        }
     });
 
     it("shows the event logo in data blocks until the first results arrive", async () => {
