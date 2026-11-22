@@ -7,6 +7,7 @@ import {LiveCanvas, liveChartLegend} from "./LiveCanvas";
 import {liveSampleResults} from "./liveSample";
 import type {ManageResultsSnapshot} from "@/api/manageResults";
 import type {LiveStage} from "./liveStages";
+import en from "../../../../messages/en.json";
 
 vi.mock("./LiveQR", () => ({LiveQR: () => null}));
 afterEach(() => {cleanup(); vi.useRealTimers(); vi.unstubAllGlobals();});
@@ -74,6 +75,32 @@ describe("live canvas widgets", () => {
     it("shows the centered empty state without results", async () => {
         const {container} = await mount(only({type: "table", w: 4, h: 4}), false, {results: board(0)});
         expect(container.querySelector(".live-list .ib-empty")).not.toBeNull();
+    });
+
+    // The empty state shows when the board has no visible teams (teams with 0 points are listed), so it names that condition.
+    it("says there are no teams on the board yet in the empty table and chart", async () => {
+        const table = await mount(only({type: "table", w: 4, h: 4}), false, {results: board(0)});
+        expect(table.container.querySelector(".live-list .ib-empty")?.textContent).toContain("Команд на табло поки немає.");
+        table.unmount();
+        const chart = await mount(only({type: "chart", w: 6, h: 4}), false, {results: board(0)});
+        expect(chart.container.querySelector(".ib-empty")?.textContent).toContain("Графік зʼявиться, щойно на табло будуть команди.");
+        expect(en["live.table.empty"]).toBe("No teams on the board yet.");
+        expect(en["live.chart.empty"]).toBe("The chart appears as soon as there are teams on the board.");
+    });
+
+    it("says participants, not teams, in the empty table and chart of an individual event", async () => {
+        const solo = {...event, Participation: 0} as PublicEventInfo;
+        const table = await mount(only({type: "table", w: 4, h: 4}), false, {results: board(0), on: solo});
+        expect(table.container.querySelector(".live-list .ib-empty")?.textContent).toContain("Учасників на табло поки немає.");
+        table.unmount();
+        const chart = await mount(only({type: "chart", w: 6, h: 4}), false, {results: board(0), on: solo});
+        expect(chart.container.querySelector(".ib-empty")?.textContent).toContain("Графік зʼявиться, щойно на табло будуть учасники.");
+    });
+
+    // A table that starts after the podium is empty while 1-3 teams stand on the podium: it must not say the board has none.
+    it("says there are no other teams when every team is on the podium", async () => {
+        const {container} = await mount(only({type: "table", w: 4, h: 4, props: {offset: 3}}), false, {results: board(2)});
+        expect(container.querySelector(".live-list .ib-empty")?.textContent).toContain("Інших команд на табло поки немає.");
     });
 
     it("shows the event logo in data blocks until the first results arrive", async () => {

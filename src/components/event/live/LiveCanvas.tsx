@@ -113,7 +113,7 @@ function LiveChart({widget, event, results, now, theme, sample, metrics, suffix}
         {caption !== null && <h2>{caption}</h2>}
         <div className="live-chart__plot" ref={ref}>
             <span className="live-chart__probe" ref={labelRef} aria-hidden="true">0</span>
-            {!hasData ? <EmptyState compact message={t("live.chart.empty")} /> : size.width > 0 && <>
+            {!hasData ? <EmptyState compact message={t(event.Participation === 1 ? "live.chart.empty" : "live.chart.emptyParticipants")} /> : size.width > 0 && <>
                 <svg width={size.width} height={size.height} role="img" aria-label={event.Participation === 1 ? t("live.chart.teamsAria") : t("live.chart.participantsAria")}>
                     {[0, 0.25, 0.5, 0.75, 1].map(step => <line key={step} className="live-chart__grid" x1={box.left} x2={box.left + box.width} y1={box.top + box.height * (1 - step)} y2={box.top + box.height * (1 - step)} />)}
                     {cutX !== null && <line className="live-chart__freeze" x1={cutX} x2={cutX} y1={box.top} y2={box.top + box.height} />}
@@ -324,6 +324,12 @@ export function liveTableSource<T>(teams: T[], props: LiveWidget["props"]): {row
     return {rows: teams.slice(offset, limit ? offset + limit : undefined), offset};
 }
 
+// The table is empty when the board has no visible teams, or when it starts after the podium and every team stands there.
+function liveTableEmptyKey(teamEvent: boolean, onPodium: boolean): string {
+    if (onPodium) return teamEvent ? "live.table.emptyAfterPodium" : "live.table.emptyAfterPodiumParticipants";
+    return teamEvent ? "live.table.empty" : "live.table.emptyParticipants";
+}
+
 function LiveTable({widget, event, results, now, metrics, edit, suffix, legend, paint}: {widget: LiveWidget; event: PublicEventInfo; results?: ManageResultsSnapshot; now: number; metrics: LiveMetrics; edit: boolean; suffix: string; legend: Map<string, string> | null; paint: Map<string, string>}) {
     const teams = results?.Scoreboard ?? [];
     const {rows: source, offset} = liveTableSource(teams, widget.props);
@@ -352,7 +358,7 @@ function LiveTable({widget, event, results, now, metrics, edit, suffix, legend, 
         flagsTasks: widget.props.showFlags === true ? Math.max(0, results?.Tasks ?? 0) : 0,
         initials: widget.props.showInitials === true,
     };
-    return <LiveList caption={caption} rows={pageSize} header metrics={metrics} empty={source.length ? null : t("live.table.empty")} progress={paged && !edit ? {page, seconds: pageSeconds, elapsed} : null}>
+    return <LiveList caption={caption} rows={pageSize} header metrics={metrics} empty={source.length ? null : t(liveTableEmptyKey(event.Participation === 1, teams.length > 0))} progress={paged && !edit ? {page, seconds: pageSeconds, elapsed} : null}>
         {(geometry, width) => {
             const gap = columns > 1 ? metrics.body * 1.2 : 0;
             const columnWidth = (width - gap * (columns - 1)) / columns;
