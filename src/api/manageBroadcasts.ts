@@ -2,7 +2,7 @@ import {z} from "zod";
 import {manageApiError} from "@/api/manage";
 import {requireApiOrigin} from "@/utils/origins";
 
-// «Розсилка» of an event: a custom message to a chosen audience over email
+// “Broadcasts” of an event: a custom message to a chosen audience over email
 // and/or in the app (docs/BROADCASTS.md). Fields are PascalCase.
 
 const id = z.string().uuid();

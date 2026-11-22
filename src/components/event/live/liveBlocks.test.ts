@@ -203,7 +203,7 @@ describe("facts over more than one day (Q4)", () => {
 
 describe("timer and table minors", () => {
     const at = Date.parse("2026-10-20T10:00:00Z");
-    it("keeps HH:MM in «Коротко» when seconds are off", () => {
+    it("keeps HH:MM in 'Short' when seconds are off", () => {
         const state: LiveTimerState = {mode: "countdown", target: at + 45 * 60_000, label: ""};
         expect(liveTimerDigits(state, at, false, "compact")).toBe("00:45");
         expect(liveTimerDigits(state, at, true, "compact")).toBe("45:00");
@@ -216,7 +216,7 @@ describe("timer and table minors", () => {
     });
 });
 
-describe("timer «Формат» choices", () => {
+describe("timer 'Format' choices", () => {
     it("maps each choice to the stored props and back", async () => {
         const {liveTimerFormat, liveTimerFormatProps} = await import("./liveStages");
         expect(liveTimerFormat({})).toBe("hms");

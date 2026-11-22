@@ -1,0 +1,39 @@
+/* Optional installation settings hide the blocks that need them (src/utils/settings.ts writes the values into <html>).
+   Every rule is "hide when"; no rule means shown. An absent attribute and an empty one both mean "empty".
+   The class names are the contract: cfg-<setting> is shown only when the setting has a value, cfg-main-off is the "no value" twin of
+   cfg-main-only (the self link), cfg-ice-support is shown only when the flag is exactly "true"
+   (cfg-ice-support-off is its twin, shown otherwise). */
+
+/* a block that needs a value */
+html:not([data-cfg-main-site-url]) .cfg-main-only,
+html[data-cfg-main-site-url=""] .cfg-main-only,
+html:not([data-cfg-terms-url]) .cfg-terms,
+html[data-cfg-terms-url=""] .cfg-terms,
+html:not([data-cfg-privacy-url]) .cfg-privacy,
+html[data-cfg-privacy-url=""] .cfg-privacy,
+html:not([data-cfg-cookies-url]) .cfg-cookies,
+html[data-cfg-cookies-url=""] .cfg-cookies {
+  display: none !important;
+}
+
+/* the twin shown only while the value is empty (the logo to this very site) */
+html[data-cfg-main-site-url]:not([data-cfg-main-site-url=""]) .cfg-main-off {
+  display: none !important;
+}
+
+/* the flag: cfg-ice-support is shown only when exactly "true", its twin cfg-ice-support-off only otherwise */
+html:not([data-cfg-ice-support="true"]) .cfg-ice-support,
+html[data-cfg-ice-support="true"] .cfg-ice-support-off {
+  display: none !important;
+}
+
+/* consent (sign-up): the row and its three label variants */
+html:is(:not([data-cfg-terms-url]), [data-cfg-terms-url=""]):is(:not([data-cfg-privacy-url]), [data-cfg-privacy-url=""]) .cfg-consent-row,
+html:is(:not([data-cfg-terms-url]), [data-cfg-terms-url=""]) .cfg-v-both,
+html:is(:not([data-cfg-privacy-url]), [data-cfg-privacy-url=""]) .cfg-v-both,
+html:is(:not([data-cfg-terms-url]), [data-cfg-terms-url=""]) .cfg-v-terms,
+html[data-cfg-privacy-url]:not([data-cfg-privacy-url=""]) .cfg-v-terms,
+html:is(:not([data-cfg-privacy-url]), [data-cfg-privacy-url=""]) .cfg-v-policy,
+html[data-cfg-terms-url]:not([data-cfg-terms-url=""]) .cfg-v-policy {
+  display: none !important;
+}

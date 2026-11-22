@@ -31,7 +31,7 @@ function enqueue(queryClient: QueryClient, eventID: string, job: () => Promise<v
     byEvent.set(eventID, next);
 }
 
-// The stage of one set: «Весь захід» or a stage. An instant control: the choice shows at once, saves run one after another
+// The stage of one set: “Whole event” or a stage. An instant control: the choice shows at once, saves run one after another
 // and never disable it, and a refused change rolls back with the reason. Before a stage opens everything is free; once it
 // has opened nothing leaves it, and a closed stage accepts nothing new (the server enforces the same).
 export function SetStageField({eventID, attachment: shownAttachment, stages, canManage}: {eventID: string; attachment: EventExerciseAttachment; stages: ManageStage[]; canManage: boolean}) {

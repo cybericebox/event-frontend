@@ -52,7 +52,7 @@ function renderProgress() {
     return render(<QueryClientProvider client={new QueryClient({defaultOptions: {queries: {retry: false}}})}><AnalyticsProgress /></QueryClientProvider>);
 }
 
-describe("Прогрес", () => {
+describe("Progress", () => {
     it("shows the score chart, the matrix, the heatmap and the idle teams", async () => {
         const calls = mockApi();
         renderProgress();

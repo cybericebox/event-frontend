@@ -8,8 +8,8 @@ import "./confirmDialog.css";
 
 // ds-v2 confirm dialog (components/confirm-dialog): a question as the title,
 // one or two lines about the consequence, an optional emphasized object name,
-// «Скасувати» + the action. tone="danger" makes the action the solid danger
-// button. Focus starts on «Скасувати»; Esc and the backdrop cancel unless the
+// “Cancel” + the action. tone="danger" makes the action the solid danger
+// button. Focus starts on “Cancel”; Esc and the backdrop cancel unless the
 // action is running. Errors stay inside the dialog; the busy action shows the
 // event logo, never a spinner.
 //
@@ -23,7 +23,7 @@ export function ConfirmDialog({open, onCancel, title, description, subject, conf
     description?: ReactNode;
     subject?: ReactNode;
     confirmLabel: string;
-    // The running action in the present tense («Видаляємо…»), shown in the button while busy.
+    // The running action in the present tense (“Deleting”), shown in the button while busy.
     busyLabel: string;
     cancelLabel?: string;
     tone?: "default" | "danger";

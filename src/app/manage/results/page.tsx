@@ -32,7 +32,7 @@ const number = new Intl.NumberFormat("uk-UA");
 
 const dayLabel = new Intl.DateTimeFormat("uk-UA", {day: "numeric", month: "long"});
 const sameDay = (left: Date, right: Date) => left.toDateString() === right.toDateString();
-// «о 21:05» today, «20 жовтня о 21:05» on another day.
+// “at 21:05” today, “Oct 20 at 21:05” on another day.
 const atLabel = (value: string, now: number) => sameDay(new Date(value), new Date(now))
     ? t("manage.results.freeze.at", {time: clockLabel(value)})
     : t("manage.results.freeze.atDate", {date: dayLabel.format(new Date(value)), time: clockLabel(value)});
@@ -132,7 +132,7 @@ export default function ManageResultsPage() {
             setConfirmOpen(false);
             toast.success(opened ? t("manage.results.freeze.openedToast") : t("manage.results.freeze.restoredToast"));
         } catch (failure) {
-            // «Відкрити підсумки» fails inside its confirmation; «Повернути» has no dialog.
+            // “Reveal results” fails inside its confirmation; “Restore” has no dialog.
             if (opened) setConfirmError(apiErrorText(failure, t("manage.results.freeze.toggleFailed")));
             else toastFailure(failure, t("manage.results.freeze.toggleFailed"));
         }

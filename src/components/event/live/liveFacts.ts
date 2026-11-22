@@ -5,7 +5,7 @@ import {clockLabel} from "@/utils/resultsFreeze";
 import {t, tPlural} from "@/i18n/t";
 import {livePoints} from "./liveTable";
 
-// «Факти»: numbers from the live results, the event and its time. All are
+// “Facts”: numbers from the live results, the event and its time. All are
 // public on the board already: the team count, the published tasks, the
 // solves shown (frozen ones stay hidden), the first solve, start and finish.
 export const liveFactKeys = ["teams", "tasks", "solves", "solvedTasks", "firstBlood", "start", "finish"] as const;

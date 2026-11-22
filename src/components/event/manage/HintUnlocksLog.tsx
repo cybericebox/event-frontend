@@ -32,7 +32,7 @@ export function filterHintUnlocks(items: HintUnlock[], filters: HintFilters): Hi
     });
 }
 
-// «Підказки» view of «Журнал спроб»: who opened which hint, when and for how much.
+// “Hints” view of “Attempts log”: who opened which hint, when and for how much.
 // Silent fallback while the journal stream reconnects.
 const HINTS_POLL_SECONDS = 30;
 

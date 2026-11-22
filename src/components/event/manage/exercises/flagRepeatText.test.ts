@@ -21,7 +21,7 @@ describe("the flag warning's numbers", () => {
         expect(text(2, teams)).toContain(`а в заході може бути ${words}:`);
     });
 
-    it("never says «флаг»", () => {
+    it("never uses the Russian word for ‘flag’", () => {
         for (const reason of ["limit", "teams", "repeated"] as const) expect(text(15, 40, reason)).not.toMatch(/флаг/i);
     });
 });

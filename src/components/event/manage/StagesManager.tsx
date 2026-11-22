@@ -232,11 +232,11 @@ function AddStage({eventID, lifecycle, canManage, onDone}: {eventID: string; lif
     </form>;
 }
 
-// «Етапи» on the schedule page: the ordered stages with what each state allows, the instant «Можна повернутися» switch
-// (optimistic, queued, rolled back on error), «Закрити зараз» and delete behind a confirmation, and the form for the next stage.
+// “Stages” on the schedule page: the ordered stages with what each state allows, the instant “Returnable” switch
+// (optimistic, queued, rolled back on error), “Close now” and delete behind a confirmation, and the form for the next stage.
 export function StagesManager({eventID, lifecycle, canManage}: {eventID: string; lifecycle: ManageLifecycle; canManage: boolean}) {
     const queryClient = useQueryClient();
-    // The new-stage form stays behind «Додати етап»; an open draft reopens it after navigation, but being open is not unsaved work.
+    // The new-stage form stays behind “Add a stage”; an open draft reopens it after navigation, but being open is not unsaved work.
     const [adding, setAdding] = useSessionDraftState("new-stage-open", false, {dirty: () => false});
     // Labs live only until the reservation window ends: no retention control (the field stays in the API).
     type Controls = Pick<ManageStage, "Returnable">;

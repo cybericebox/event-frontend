@@ -27,7 +27,7 @@ const formats = {
 const numericParts = new Intl.DateTimeFormat("en-GB", {year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric", hourCycle: "h23", timeZone: EVENT_TIME_ZONE});
 const monthLong = new Intl.DateTimeFormat("uk-UA", {month: "long", timeZone: EVENT_TIME_ZONE});
 const monthShort = new Intl.DateTimeFormat("uk-UA", {month: "short", timeZone: EVENT_TIME_ZONE});
-// With a day number the month is in the genitive: «21 жовтня», alone the nominative: «жовтень 2026».
+// With a day number the month is in the genitive (Ukrainian grammar): “21 zhovtnia”, alone the nominative: “zhovten 2026”.
 const dayMonthLong = new Intl.DateTimeFormat("uk-UA", {day: "numeric", month: "long", timeZone: EVENT_TIME_ZONE});
 
 // The calendar fields of a moment in the event's zone (one formatToParts call).

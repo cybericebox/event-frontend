@@ -18,7 +18,7 @@ export type CsvSchema = {
     participant: FieldColumn[];
     teamForm: ParticipantForm | null;
     participantForm: ParticipantForm | null;
-    // «Файл» questions cannot be imported: people upload them themselves.
+    // “File” questions cannot be imported: people upload them themselves.
     skipped: Array<{scope: FieldScope; field: FormField}>;
 };
 export type FieldIssue = {code: "invalidNumber" | "invalidOption" | "invalidChoice" | "invalidBool" | "invalidDate" | "dateRange"; column: string; value: string};

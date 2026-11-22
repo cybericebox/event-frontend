@@ -23,8 +23,8 @@ export function draftStateLabel({dirty, hasDraft, published}: DraftState): {titl
 }
 
 /**
- * «Зберегти» stores a draft that is never public; «Опублікувати» saves pending
- * edits first and then publishes. «Скасувати зміни» drops the stored draft and
+ * “Save” stores a draft that is never public; “Publish” saves pending
+ * edits first and then publishes. “Discard changes” drops the stored draft and
  * returns to the published version; the dialog stays open until that is done,
  * and a failure shows inside it (onDiscardDraft resolves to the error text).
  */
@@ -40,7 +40,7 @@ export function DraftBar({state, busy, canManage, invalid, onSave, onPublish, on
 }) {
     const [confirmDiscard, setConfirmDiscard] = useState(false);
     const [discardError, setDiscardError] = useState("");
-    // «Скасувати» drops every unsaved edit, so it asks first.
+    // “Cancel” drops every unsaved edit, so it asks first.
     const [confirmRevert, setConfirmRevert] = useState(false);
     const label = draftStateLabel(state);
     const canPublish = state.dirty || state.hasDraft || !state.published;

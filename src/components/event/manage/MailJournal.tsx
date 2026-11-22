@@ -21,7 +21,7 @@ const all = "all";
 
 const typeTitle = (type: string) => mailJournalTypeLabel(type, value => signalLabel(value).title);
 
-// «Журнал надсилання»: every message the platform tried to send for this
+// “Sending log”: every message the platform tried to send for this
 // event, in the same table as the other manage journals.
 export function MailJournal() {
     const {event} = useManager();

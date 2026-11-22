@@ -10,7 +10,7 @@ import {EmptyState} from "@/components/ui/EmptyState";
 import {t} from "@/i18n/t";
 
 // A signed-in visitor who is not a participant of the event yet. Only one who may still apply gets
-// «Приєднатися»; an application under review or a rejected one is named as it is, without a button
+// “Join”; an application under review or a rejected one is named as it is, without a button
 // that would lead back to the same answer.
 export function NotParticipant({eventID, message, action}: {eventID: string; message: string; action: string}) {
     const status = useQuery({queryKey: ["event-join-status", eventID], queryFn: getJoinStatus, retry: false,

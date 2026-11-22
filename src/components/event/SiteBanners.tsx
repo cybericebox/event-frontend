@@ -13,6 +13,7 @@ import { keepBrand } from "@/i18n/brand";
 import "@/styles/event-site-banners.css";
 import {siteBannerDismissedKey} from "@/utils/storageKeys";
 import {subscribePulse} from "@/utils/pulse";
+import {safeLinkHref} from "@/utils/safeUrl";
 
 export type SiteBannerData = Pick<VisibleBanner, "Text" | "LinkURL" | "LinkLabel" | "Level" | "Dismissible">;
 
@@ -22,8 +23,7 @@ const priorities = {critical: 0, warning: 1, info: 2} as const;
 
 // Only a site path or an http(s) address may be a banner link.
 export function safeBannerLink(url: string): boolean {
-    const value = url.trim();
-    return (value.startsWith("/") && !value.startsWith("//")) || /^https?:\/\//i.test(value);
+    return safeLinkHref(url, {schemes: ["https:", "http:"]}) !== null;
 }
 
 // The banner row of the site: a calm tinted line above the navbar with the text,
@@ -32,13 +32,13 @@ export function safeBannerLink(url: string): boolean {
 // site and by the live preview in the banner editor.
 export function SiteBanner({banner, onDismiss, actions}: {banner: SiteBannerData; onDismiss?: () => void; actions?: ReactNode}) {
     const Icon = icons[banner.Level];
-    const link = banner.LinkURL.trim();
+    const link = safeLinkHref(banner.LinkURL, {schemes: ["https:", "http:"]});
     const label = keepBrand(banner.LinkLabel.trim() || t("siteBanner.more"));
     return <div className={`ib-banner ib-banner--${tones[banner.Level]}`} role={banner.Level === "critical" ? "alert" : "status"} data-level={banner.Level}>
         <span className="ib-banner__icon"><Icon aria-hidden="true" /></span>
         <div className="ib-banner__text"><span className="ib-banner__msg">{keepBrand(banner.Text)}</span></div>
-        {(link && safeBannerLink(link) || actions) && <div className="ib-banner__action">
-            {link && safeBannerLink(link) && (link.startsWith("/") ? <Link className="ib-link ib-link--standalone" href={link}>{label}</Link>
+        {(link || actions) && <div className="ib-banner__action">
+            {link && (link.startsWith("/") ? <Link className="ib-link ib-link--standalone" href={link}>{label}</Link>
                 : <a className="ib-link ib-link--standalone" href={link} target="_blank" rel="noopener noreferrer">{label}<span className="ib-sr"> {t("siteBanner.newTab")}</span></a>)}
             {actions}
         </div>}

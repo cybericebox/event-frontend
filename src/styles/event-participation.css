@@ -1,4 +1,4 @@
-/* «Моя участь»: profile and team as calm cards. No shadows, no accent borders. */
+/* “My participation”: profile and team as calm cards. No shadows, no accent borders. */
 .event-pp{display:grid;gap:var(--ib-5);align-content:start;min-width:0}
 .event-pp-card{display:flex;flex-direction:column;min-width:0;border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-surface)}
 .event-pp-card__head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:var(--ib-2) var(--ib-4);padding:var(--ib-4) var(--ib-5) 0}

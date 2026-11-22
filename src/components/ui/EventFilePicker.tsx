@@ -27,8 +27,8 @@ export function formatFileSize(bytes: number): string {
 // then checks them exactly as if they were dropped on it.
 export type FilePickerHandle = {take: (files: File[]) => void};
 
-// DS file picker: a dashed drop zone («Перетягніть файл сюди або» + «Обрати
-// файл») that opens the native picker on click, Enter or Space, and checks a
+// DS file picker: a dashed drop zone (“Drag a file here or” + “Choose
+// file”) that opens the native picker on click, Enter or Space, and checks a
 // dropped or picked file against `accept` and `maxBytes` before handing it on.
 // With a file it shows the name, size and a remove button. `compact` is the
 // one-line variant for dialogs.
@@ -45,7 +45,7 @@ export function EventFilePicker({id, fileName, fileSize, onFile, accept, maxByte
     error?: string | null;
     busy?: boolean;
     compact?: boolean;
-    // Replaces «Перетягніть файл сюди або» + the button with one line: the whole zone is the button.
+    // Replaces “Drag a file here or” + the button with one line: the whole zone is the button.
     prompt?: string;
     // The accessible name of the zone when `prompt` is set.
     label?: string;

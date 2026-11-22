@@ -5,7 +5,7 @@ import {localFromISO, localToISO, parseLocalDate} from "@/components/ui/dateTime
 
 export type DateMode = "date" | "time" | "datetime";
 
-// A «Дата / час» value in its stored form: a day ("YYYY-MM-DD") or a time of
+// A “Date / time” value in its stored form: a day ("YYYY-MM-DD") or a time of
 // day ("HH:MM") picked as is, or a moment picked in the viewer's local time and
 // kept as UTC ISO. "" is empty.
 export function DateAnswerInput({mode, value, onChange, ariaLabel, id, disabled = false, allowClear = true}: {
@@ -22,7 +22,7 @@ export function DateAnswerInput({mode, value, onChange, ariaLabel, id, disabled 
     return <EventDateTimePicker id={id} value={localFromISO(value)} onChange={local => onChange(local ? localToISO(local) ?? "" : "")} ariaLabel={ariaLabel} disabled={disabled} allowClear={allowClear} />;
 }
 
-// A stored «Дата» value for reading: the day, or the local date and time.
+// A stored “Date” value for reading: the day, or the local date and time.
 export function formatDateAnswer(mode: DateMode, value: string): string {
     if (mode === "time") return value;
     if (mode === "date") {

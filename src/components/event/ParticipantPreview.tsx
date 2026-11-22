@@ -27,7 +27,7 @@ const PreviewStateSchema = z.object({
     outcome: z.enum(["approved", "pending", "rejected"]),
     answers: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.array(z.string()), answerFileSchema])),
     team: ownTeamSchema.nullable(),
-    // «Показати завдання»: the test task board shows whatever the event phase says and the dynamic tasks' labs run.
+    // “Show tasks”: the test task board shows whatever the event phase says and the dynamic tasks' labs run.
     // Off by default: the real phase screens, no test labs.
     tasks: z.boolean().default(false),
     // New entries get an instance identity; legacy saved previews remain readable.

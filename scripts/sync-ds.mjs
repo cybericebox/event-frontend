@@ -21,7 +21,7 @@ const check = process.argv.includes("--check")
 const sha = (text) => createHash("sha256").update(text).digest("hex")
 
 const candidates = [process.env.DS_DIR, join(root, "ds-source")]
-for (let dir = root; dir !== dirname(dir); dir = dirname(dir)) candidates.push(join(dir, "docs/design-system"))
+for (let dir = root; dir !== dirname(dir); dir = dirname(dir)) candidates.push(join(dir, "docs/internal-docs/design-system"))
 const src = candidates.filter(Boolean).find((d) => existsSync(join(d, "tokens.css")))
 
 // local file in src/styles → source file in the DS

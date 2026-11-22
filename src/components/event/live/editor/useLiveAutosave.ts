@@ -10,7 +10,7 @@ export const liveAutosaveRetryDelay = 5000;
 
 // The editor keeps the draft saved on its own: every valid change is written
 // shortly after the last edit. The draft is never shown on the screen until
-// «Опублікувати», so saving it silently is safe.
+// “Publish”, so saving it silently is safe.
 export function useLiveAutosave({eventID, screenID, layout, savedJSON, valid, enabled, onSaved}: {
     // The screen whose draft this is.
     eventID: string; screenID: string; layout: LiveLayout | null; savedJSON: string; valid: boolean; enabled: boolean; onSaved: (layout: LiveLayout) => void;

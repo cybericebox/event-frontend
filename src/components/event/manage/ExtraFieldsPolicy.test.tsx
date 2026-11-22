@@ -34,7 +34,7 @@ async function renderEditor(scope: "participant" | "team") {
     await waitFor(() => screen.getAllByText("Курс"));
 }
 
-// Adds a question called «Клуб» and makes it required.
+// Adds a question called “Club” and makes it required.
 function addRequiredClub() {
     fireEvent.click(screen.getByRole("button", {name: /^Поле$/}));
     const added = screen.getByRole("region", {name: "Питання 2"});

@@ -14,7 +14,7 @@ const question = {
     Snapshot: {name: "T", difficulty: "easy"}, Readiness: 2, SolvedAt: null,
     Points: 10, Order: 1, GroupID: null, GroupName: "", GroupOrder: 0,
 };
-const linkResponse = {URL: "https://web.labs.test/_auth?t=one-use", ExpiresAt: "2026-10-08T13:00:00Z", LabID: runningLab.ID, Revision: runningLab.Revision};
+const linkResponse = {URL: "https://web.labs.test/_auth", Grant: "one-use.grant", ExpiresAt: "2026-10-08T13:00:00Z", LabID: runningLab.ID, Revision: runningLab.Revision};
 
 describe("getChallengeSolves", () => {
     it.each([undefined, false, true])("reads the task solutions freeze state (%s)", async Frozen => {
@@ -60,7 +60,7 @@ describe("openLabLink", () => {
         const {openLabLink} = await import("./participantChallenges");
         fetchMock.mockResolvedValue(reply({Data: linkResponse}));
         expect(await openLabLink("e1", "c1", "web", 80, false, runningLab)).toEqual({
-            url: "https://web.labs.test/_auth?t=one-use", expiresAt: Date.parse("2026-10-08T13:00:00Z"),
+            url: "https://web.labs.test/_auth", grant: "one-use.grant", expiresAt: Date.parse("2026-10-08T13:00:00Z"),
             labID: runningLab.ID, revision: "9007199254740993",
         });
     });
@@ -80,10 +80,16 @@ describe("openLabLink", () => {
         await expect(openLabLink("e1", "c1", "web", 80)).rejects.toThrow();
     });
 
+    it.each([{Grant: undefined}, {Grant: ""}, {URL: "https://web.labs.test/_auth?grant=x"}, {URL: "https://web.labs.test/_auth#x"}])("rejects an answer without a grant or with a credential-shaped URL %j", async fields => {
+        const {openLabLink} = await import("./participantChallenges");
+        fetchMock.mockResolvedValue(reply({Data: {...linkResponse, ...fields}}));
+        await expect(openLabLink("e1", "c1", "web", 80)).rejects.toThrow();
+    });
+
     it("posts the device to the team route, or the manage route for the moderators team", async () => {
         const {openLabLink} = await import("./participantChallenges");
-        fetchMock.mockImplementation(async () => reply({Data: {URL: "https://web-abc123.labs.test/_auth?t=x", ExpiresAt: "2026-09-30T13:00:00Z"}}));
-        expect(await openLabLink("e1", "c1", "web", 80)).toEqual({url: "https://web-abc123.labs.test/_auth?t=x", expiresAt: Date.parse("2026-09-30T13:00:00Z"), labID: null, revision: null});
+        fetchMock.mockImplementation(async () => reply({Data: {URL: "https://web-abc123.labs.test/_auth", Grant: "g", ExpiresAt: "2026-09-30T13:00:00Z"}}));
+        expect(await openLabLink("e1", "c1", "web", 80)).toEqual({url: "https://web-abc123.labs.test/_auth", grant: "g", expiresAt: Date.parse("2026-09-30T13:00:00Z"), labID: null, revision: null});
         await openLabLink("e1", "c1", "web", 80, true);
         expect(fetchMock.mock.calls[0][0]).toMatch(/\/api\/events\/e1\/teams\/challenges\/c1\/lab\/link$/);
         expect(fetchMock.mock.calls[0][1]).toMatchObject({method: "POST", credentials: "include", body: JSON.stringify({Device: "web", Port: 80})});
@@ -149,7 +155,7 @@ describe("getOwnBoard", () => {
 describe("getOwnChallengeLab", () => {
     it("retains generic waiting status without scheduler diagnostics", async () => {
         const {getOwnChallengeLab} = await import("./participantChallenges");
-        fetchMock.mockResolvedValue(reply({Data: {Phase: "Queued", Ready: false, Access: []}}));
+        fetchMock.mockResolvedValue(reply({Data: {Phase: "Queued", Ready: false, Gateways: [], Access: []}}));
         expect(await getOwnChallengeLab("e1", "c1")).toMatchObject({Phase: "Queued", Ready: false, Access: []});
     });
 });

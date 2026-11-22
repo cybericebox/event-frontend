@@ -12,7 +12,7 @@ import {t} from "@/i18n/t";
 import {ManageFieldLabel} from "../ManageFieldLabel";
 import {broadcastTemplates, savedBroadcastTemplates, type BroadcastTemplate} from "./broadcastTemplates";
 
-// «Шаблон»: the event's saved broadcast templates first, then the published notification templates. Picking one
+// “Template”: the event's saved broadcast templates first, then the published notification templates. Picking one
 // hands it to the composer, which fills itself from it; the template itself does not change.
 export function TemplateStart({event, onPick}: {event: PublicEventInfo; onPick: (template: BroadcastTemplate) => void}) {
     const eventID = event.EventID;

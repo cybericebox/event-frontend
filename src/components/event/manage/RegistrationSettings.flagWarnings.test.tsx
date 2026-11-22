@@ -46,7 +46,7 @@ it("refreshes the task list's flag warnings after the team limit changes: no rel
     await waitFor(() => expect(api.config).toHaveBeenCalled());
     cleanup();
 
-    // Back on «Завдання»: the list is read again and the warning shows.
+    // Back on “Task”: the list is read again and the warning shows.
     api.attachments.mockResolvedValue(set({Flags: 15, Teams: 20, Reason: "limit"}));
     const again = renderHook(() => useBoardSets("e1"), {wrapper});
     await waitFor(() => expect(again.result.current.attachments.data?.[0].FlagsRepeat).toMatchObject({Teams: 20}));

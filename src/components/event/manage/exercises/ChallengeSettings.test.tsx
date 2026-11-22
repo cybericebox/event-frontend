@@ -33,7 +33,7 @@ function renderPage(withDraftProvider = false) {
     return render(<QueryClientProvider client={new QueryClient({defaultOptions: {queries: {retry: false}}})}>{withDraftProvider ? <ManualDraftProvider userID="user-1" eventID="3f1c2d4e-0000-4000-8000-000000000001">{page}</ManualDraftProvider> : page}</QueryClientProvider>);
 }
 
-describe("Показ завдань", () => {
+describe("Task display", () => {
     afterEach(() => {cleanup(); Object.assign(server, {status: "published", mode: "all_ready", attempts: null, policy: null}); server.put.mockReset();});
 
     it("shows the saved mode and switches at once, without waiting for the server", async () => {
@@ -65,7 +65,7 @@ describe("Показ завдань", () => {
     });
 });
 
-describe("Спроби", () => {
+describe("Attempts", () => {
     afterEach(() => {cleanup(); Object.assign(server, {status: "published", mode: "all_ready", attempts: null, policy: null}); server.put.mockReset();});
     const field = async () => await screen.findByRole("spinbutton", {name: "Максимум невдалих спроб на завдання"}) as HTMLInputElement;
 

@@ -35,8 +35,8 @@ const liveLayoutObject = z.object({
     // setting existed get the default.
     refreshSeconds: z.number().int().optional().transform(value => value || liveRefreshDefault),
     formats: formatsSchema.optional(),
-    // «Окремий екран для кожного стану»: the other event states' screens; the
-    // layout itself is «running». Absent = «Один екран для всіх станів». A
+    // “A separate screen for each state”: the other event states' screens; the
+    // layout itself is «running». Absent = “One screen for all states”. A
     // state missing from `scenes` is filled with a copy of «running» on load.
     scenes: z.object({before: sceneSchema.optional(), frozen: sceneSchema.optional(), finished: sceneSchema.optional()}).optional(),
 });
@@ -145,7 +145,7 @@ export async function getLiveLayoutVersion(eventID: string, screenID?: string | 
     return liveRequest(eventID, `/version${screenID ? `?screen=${encodeURIComponent(screenID)}` : ""}`, z.object({Version: z.number().int()})).then(value => value.Version);
 }
 
-// The screen link («Посилання для перегляду Live»): one per screen; a token
+// The screen link (“Live view links”): one per screen; a token
 // opens that screen on a projector PC that is not signed in.
 // The token comes back only when the link is created or regenerated.
 export const liveScreenExpiries = ["none", "day", "week", "event_end"] as const;

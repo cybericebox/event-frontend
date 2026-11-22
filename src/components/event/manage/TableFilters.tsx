@@ -54,7 +54,7 @@ function FilterControl({spec, draft, onChange}: {spec: FilterSpec; draft: Filter
     }
 }
 
-// «Фільтри»: one popover for every column of the table, by column type.
+// “Filters”: one popover for every column of the table, by column type.
 export function TableFiltersButton({specs, drafts, onChange, active}: {specs: FilterSpec[]; drafts: FilterDrafts; onChange: (drafts: FilterDrafts) => void; active: number}) {
     return <PopoverPrimitive.Root>
         <PopoverPrimitive.Trigger asChild>
@@ -74,7 +74,7 @@ export function TableFiltersButton({specs, drafts, onChange, active}: {specs: Fi
     </PopoverPrimitive.Root>;
 }
 
-// Active filters above the table as removable chips, plus «Скинути фільтри».
+// Active filters above the table as removable chips, plus “Reset filters”.
 export function TableFilterChips({specs, drafts, onChange, onReset, extra}: {specs: FilterSpec[]; drafts: FilterDrafts; onChange: (drafts: FilterDrafts) => void; onReset: () => void; extra?: {key: string; text: string; onRemove: () => void}[]}) {
     const chips = [...(extra ?? []), ...filterChips(specs, drafts).map(chip => ({...chip, onRemove: () => onChange(withoutFilter(drafts, chip.key))}))];
     if (chips.length === 0) return null;

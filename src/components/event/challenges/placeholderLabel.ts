@@ -6,8 +6,7 @@ import {t} from "@/i18n/t";
 export function placeholderLabel(placeholder: SnapshotPlaceholder): string {
     const device = placeholder.device_name?.trim();
     switch (placeholder.kind) {
-        case "vpn.subnet": return t("manage.placeholder.vpnSubnet");
-        case "internet.subnet": return t("manage.placeholder.internetSubnet");
+        case "gateway.subnet": return t("manage.placeholder.gatewaySubnet", {gateway: placeholder.gateway || "—"});
         case "external.link": return t("manage.placeholder.externalLink", {device: device || "—"});
         case "ip": {
             if (placeholder.as_link) {
@@ -17,7 +16,7 @@ export function placeholderLabel(placeholder: SnapshotPlaceholder): string {
             if (device) return t("manage.placeholder.ipDevice", {device});
             const octet = placeholder.last_octet ?? 0;
             if (placeholder.ip_reference === "static") return t("manage.placeholder.ipStatic", {address: `${placeholder.octets_1to3 ?? ""}.${octet}`});
-            return t("manage.placeholder.ipRef", {reference: t(`manage.placeholder.ref.${placeholder.ip_reference === "internet" ? "internet" : "vpn"}`), octet});
+            return t("manage.placeholder.ipRef", {gateway: placeholder.gateway || "—", octet});
         }
         default: return placeholder.key;
     }

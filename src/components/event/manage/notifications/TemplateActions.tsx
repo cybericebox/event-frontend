@@ -7,8 +7,8 @@ import {t} from "@/i18n/t";
 import type {TemplateMode} from "./notificationModel";
 
 // The buttons of a template page for the current mode. A platform template is
-// only shown; «Налаштувати для заходу» makes the event copy. A published copy
-// is edited through a draft; «Повернути стандартний» deletes the event's
+// only shown; “Customize for this event” makes the event copy. A published copy
+// is edited through a draft; “Restore the default” deletes the event's
 // versions and goes back to the platform template.
 export function TemplateActions({mode, canManage, busy, onCustomize, onEdit, onRestore, onReset, onDeleteDraft}: {
     mode: TemplateMode;

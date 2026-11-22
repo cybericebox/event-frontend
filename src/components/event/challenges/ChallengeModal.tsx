@@ -58,7 +58,7 @@ const PREVIEW_NO_FREE_RESOURCES = new Set([2508, 2509, 2517]);
 // The caller's test-lab cap is reached (409, ErrTestDeployActiveExists): the error names the running labs.
 const TEST_LAB_LIMIT = 963;
 
-// At the test-lab cap nothing is replaced: the running labs are named, each with its own deliberate «Зупинити».
+// At the test-lab cap nothing is replaced: the running labs are named, each with its own deliberate “Stop”.
 function TestLabLimit({eventID, labs, onStopped}: {eventID: string; labs: {ID: string; Name: string; EventID?: string}[]; onStopped: () => void}) {
     const [stopping, setStopping] = useState<string | null>(null);
     const [failed, setFailed] = useState<unknown>(null);
@@ -541,7 +541,7 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, teamMode
         try {
             const run = await startPreviewRun(eventID, selectionID, runLength || undefined);
             if (!currentSession()) return;
-            queryClient.setQueryData<ObservedRuntime>(runtimeKey, {previewRunID: run.ID, Lab: null, Phase: "pending", Ready: false, Queue: null, VPNCIDR: "", InternetCIDR: "", Access: []});
+            queryClient.setQueryData<ObservedRuntime>(runtimeKey, {previewRunID: run.ID, Lab: null, Phase: "pending", Ready: false, Queue: null, Gateways: [], Access: []});
             queryClient.setQueryData<OwnBoard>(previewBoardKey(eventID), board => board && ({...board, Challenges: board.Challenges.map(task => task.PreviewSelectionID === selectionID ? {...task, PreviewRunID: run.ID, PreviewExpiresAt: run.ExpiresAt} : task)}));
             setStartedRun({selectionID, id: run.ID, replaces: challenge?.PreviewRunID, expiresAt: run.ExpiresAt});
             onRejected?.();

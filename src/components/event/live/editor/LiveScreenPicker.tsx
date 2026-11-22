@@ -14,7 +14,7 @@ import {t} from "@/i18n/t";
 
 export const liveScreenNameMax = 40;
 
-// «Екран»: the screens of the event in one select (up to 10), and the actions
+// “Screen”: the screens of the event in one select (up to 10), and the actions
 // on the open one behind «⋯» (rename, duplicate, new, delete). Every screen is
 // edited with the same editor; switching saves the open screen first.
 export function LiveScreenPicker({eventID, screens, max, currentID, disabled, onSwitch, onChanged}: {

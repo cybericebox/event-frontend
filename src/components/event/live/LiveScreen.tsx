@@ -224,7 +224,7 @@ export function LiveScreen({event, token, link, serverNow}: {event: PublicEventI
     const scene = liveSceneLayout(base, sceneState);
     const layout = scene.screen.anchor === "top-left" ? scene : liveFormatLayout(scene, pickLiveFormat(scene, windowWidth / windowHeight));
     const anchored = layout.screen.anchor === "top-left";
-    // «Безпечне поле»: the canvas keeps clear of the edges a TV crops.
+    // “Safe area”: the canvas keeps clear of the edges a TV crops.
     const safe = liveSafeInsets(anchored ? layout.screen.width : windowWidth || 0, anchored ? layout.screen.height : windowHeight || 0, liveSafeArea(layout.screen));
     const style = {"--live-screen-width": `${layout.screen.width}px`, "--live-screen-height": `${layout.screen.height}px`} as CSSProperties;
     const areaStyle = {padding: `${safe.y}px ${safe.x}px`, transform: shift[0] || shift[1] ? `translate(${shift[0]}px, ${shift[1]}px)` : undefined} as CSSProperties;

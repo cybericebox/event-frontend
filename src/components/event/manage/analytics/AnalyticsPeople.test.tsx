@@ -53,7 +53,7 @@ function renderWith(node: React.ReactNode) {
     return render(<QueryClientProvider client={new QueryClient({defaultOptions: {queries: {retry: false}}})}>{node}</QueryClientProvider>);
 }
 
-describe("Учасники", () => {
+describe("Participants", () => {
     it("shows the funnel, registrations, team fill, answers and the drop-off list", async () => {
         const calls = mockApi(participants());
         renderWith(<AnalyticsParticipants />);
@@ -109,7 +109,7 @@ describe("Учасники", () => {
     });
 });
 
-describe("Комунікації", () => {
+describe("Communications", () => {
     const body = {
         Totals: {Type: "", EmailSent: 10, EmailErrors: 2, InAppSent: 8, InAppErrors: 0, InAppCreated: 8, InAppRead: 6, ReadRate: 0.75},
         Types: [

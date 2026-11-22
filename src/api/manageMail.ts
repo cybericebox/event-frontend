@@ -4,7 +4,7 @@ import {requireApiOrigin} from "@/utils/origins";
 import {t} from "@/i18n/t";
 import {parseNumberInput} from "@/components/ui/EventNumberInput";
 
-// W7 «Пошта»: event sender and reply-to identity, start reminder,
+// W7 “Mail”: event sender and reply-to identity, start reminder,
 // optional event SMTP and the delivery journal (spec 2026-09-29 §6).
 
 export type MailTLSMode = "starttls" | "tls";
@@ -73,7 +73,7 @@ const journalItemSchema = z.object({
     ID: z.string(), NotificationType: z.string(), RecipientUserID: z.string().optional(), Status: z.string(),
     CreatedAt: z.string(), UpdatedAt: z.string(),
     ScopeEventID: z.string().nullable().optional(), EventName: z.string().nullable().optional(),
-    // Set when the message is one recipient of a custom broadcast («Розсилка»).
+    // Set when the message is one recipient of a custom broadcast (“Broadcasts”).
     BroadcastID: z.string().nullish(),
     RecipientEmail: z.string().nullable().optional().transform(value => value ?? ""),
     RecipientName: text,
@@ -165,7 +165,7 @@ export function smtpError(form: SMTPForm): string {
 }
 
 // Empty Password keeps the stored one; ClearPassword removes it and wins over
-// a typed password (the explicit «Видалити пароль» action).
+// a typed password (the explicit “Remove password” action).
 export function smtpInput(form: SMTPForm): SMTPInput {
     return {
         Host: form.host.trim(), Port: Number(form.port.trim()), TLSMode: form.tlsMode, Username: form.username.trim(),

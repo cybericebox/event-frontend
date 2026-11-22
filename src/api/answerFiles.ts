@@ -2,7 +2,7 @@ import {z} from "zod";
 import {readApiErrorCode, readRetryAfter} from "@/api/apiErrors";
 import {requireApiOrigin} from "@/utils/origins";
 
-// A «Файл» answer as the backend stores it: the uploaded file's reference and
+// A “File” answer as the backend stores it: the uploaded file's reference and
 // the metadata shown in tables. Only `id` is trusted on save; the server
 // rewrites the rest from its own record.
 export const answerFileSchema = z.object({id: z.string(), name: z.string(), size: z.number(), contentType: z.string()});

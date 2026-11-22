@@ -74,7 +74,7 @@ function RowsFields({layout, widget, disabled, onProp}: {layout: LiveLayout; wid
 
 const limitOptions = [0, 3, 5, 8, 10, 15, 20];
 
-// Table: two columns, «Лише перші N», «Почати з місця 4», and — only while
+// Table: two columns, “Top N only”, “Start from place 4”, and — only while
 // the places do not fit one page — the page time and the pinned rows.
 function TableFields({widget, rows, disabled, onProp}: {widget: LiveWidget; rows: number; disabled: boolean; onProp: (key: string, value: PropValue) => void}) {
     const offset = Number(widget.props.offset) === 3;
@@ -141,7 +141,7 @@ function TimerFields({widget, event, disabled, onProp, onProps}: {widget: LiveWi
             <LiveSegmented label={t("manage.live.prop.timerLabelSize")} help={t("manage.live.prop.timerLabelSizeHelp")} value={(textProp(widget, "labelSize") || "m") as "s" | "m" | "l"} disabled={disabled}
                 options={[{value: "s", label: t("manage.live.prop.size.s")}, {value: "m", label: t("manage.live.prop.size.m")}, {value: "l", label: t("manage.live.prop.size.l")}]} onChange={value => onProp("labelSize", value)} />
         </>}
-        {/* One «Формат» with examples instead of a format and a seconds switch
+        {/* One “Aspect” with examples instead of a format and a seconds switch
             that overlapped (owner, 2026-10-22). The stored props stay. */}
         <LiveSegmented label={t("manage.live.prop.timerDigits")} help={t("manage.live.prop.timerDigitsHelp")} value={liveTimerFormat(widget.props)} disabled={disabled}
             options={liveTimerFormats.map(value => ({value, label: t(`manage.live.prop.timerFormat.${value}`)}))} onChange={value => onProps(liveTimerFormatProps(value))} />
@@ -165,13 +165,13 @@ function TimerFields({widget, event, disabled, onProp, onProps}: {widget: LiveWi
     </>;
 }
 
-// «Вирівнювання» of the title, timer, clock and announcement.
+// “Alignment” of the title, timer, clock and announcement.
 function AlignField({widget, fallback, disabled, onProp}: {widget: LiveWidget; fallback: LiveAlign; disabled: boolean; onProp: (key: string, value: PropValue) => void}) {
     return <LiveSegmented label={t("manage.live.prop.align")} help={t("manage.live.prop.alignHelp")} value={liveAlign(widget, fallback)} disabled={disabled}
         options={(["left", "center", "right"] as const).map(value => ({value, label: t(`manage.live.prop.align.${value}`)}))} onChange={value => onProp("align", value === fallback ? null : value)} />;
 }
 
-// «Факти»: which numbers the block shows, in a fixed order, up to six.
+// “Facts”: which numbers the block shows, in a fixed order, up to six.
 function FactsFields({widget, disabled, onProp}: {widget: LiveWidget; disabled: boolean; onProp: (key: string, value: PropValue) => void}) {
     const items = liveFactItems(widget);
     const toggle = (key: LiveFactKey) => {
@@ -207,9 +207,9 @@ function CommonFields({widget, disabled, onProp}: {widget: LiveWidget; disabled:
     </Section>;
 }
 
-// «Нагороди» of a table or podium: how the prize places 1–3 are marked (a
+// “Awards” of a table or podium: how the prize places 1–3 are marked (a
 // number, a medal, a cup or the organizer's picture) and highlighted; their
-// colours are on «Кольори».
+// colours are on “Colours”.
 function HighlightFields({eventID, widget, disabled, onProp}: {eventID: string; widget: LiveWidget; disabled: boolean; onProp: (key: string, value: PropValue) => void}) {
     const highlight = liveHighlightOf(widget);
     const marker = liveMarkerOf(widget);
@@ -224,7 +224,7 @@ function HighlightFields({eventID, widget, disabled, onProp}: {eventID: string; 
     </>;
 }
 
-// «Свої зображення»: one picture per place 1–3, uploaded like the logos. The
+// “Own pictures”: one picture per place 1–3, uploaded like the logos. The
 // screen needs all three, so the pictures are kept here until the third one
 // arrives and then saved together; until then the block shows cups.
 function PlaceImagesField({eventID, widget, disabled, onProp}: {eventID: string; widget: LiveWidget; disabled: boolean; onProp: (key: string, value: PropValue) => void}) {
@@ -269,7 +269,7 @@ function PlaceImagesField({eventID, widget, disabled, onProp}: {eventID: string;
     </div>;
 }
 
-// The colours of places 1–3 (medals, cups, badges, row tints), on the «Кольори» tab of a table or podium.
+// The colours of places 1–3 (medals, cups, badges, row tints), on the “Colours” tab of a table or podium.
 function PlaceColorFields({widget, disabled, onProp}: {widget: LiveWidget; disabled: boolean; onProp: (key: string, value: PropValue) => void}) {
     const places = livePlaceColors(widget);
     const custom = Array.isArray(widget.props.placeColors);
@@ -285,7 +285,7 @@ function PlaceColorFields({widget, disabled, onProp}: {widget: LiveWidget; disab
 // podium places, the chart's freeze mark, the running stage.
 const liveAccentBlocks = new Set<LiveWidget["type"]>(["timer", "table", "podium", "chart", "stages"]);
 
-// «Кольори»: the block's own fill, text and accent over the screen theme.
+// “Colours”: the block's own fill, text and accent over the screen theme.
 function ColorFields({event, layout, widget, disabled, onProp, onProps}: {
     event: PublicEventInfo; layout: LiveLayout; widget: LiveWidget; disabled: boolean; onProp: (key: string, value: PropValue) => void; onProps: (changes: Record<string, PropValue>) => void;
 }) {
@@ -345,7 +345,7 @@ function LogosFields({eventID, widget, disabled, onProp}: {eventID: string; widg
 }
 
 // Settings of the selected widget: the header with its name and removal,
-// «Відображення» (its own content) and «Розташування й розмір».
+// “Display” (its own content) and “Position and size”.
 export function LiveWidgetSettings({event, layout, widget, disabled, placeDisabled = disabled, onPlace, onProp, onProps, onDistribute, onRemove}: {
     event: PublicEventInfo; layout: LiveLayout; widget: LiveWidget; disabled: boolean;
     // An «auto» screen shape takes its placement from the base.
@@ -355,9 +355,9 @@ export function LiveWidgetSettings({event, layout, widget, disabled, placeDisabl
 }) {
     const eventID = event.EventID;
     const minimum = liveWidgetMinimums[widget.type];
-    // The settings sit on tabs, so each one fits without scrolling: «Вигляд»
-    // (what the block shows and its text), «Нагороди» (how a table or podium
-    // marks the prize places), «Кольори» (all colours), «Місце».
+    // The settings sit on tabs, so each one fits without scrolling: “Appearance”
+    // (what the block shows and its text), “Awards” (how a table or podium
+    // marks the prize places), “Colours” (all colours), “Rank”.
     const ranked = widget.type === "table" || widget.type === "podium";
     const tabs: SettingsTab[] = ranked ? ["display", "awards", "colors", "place"] : ["display", "colors", "place"];
     const [chosenTab, setTab] = useState<SettingsTab>("display");

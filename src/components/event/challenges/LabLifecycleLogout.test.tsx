@@ -36,7 +36,7 @@ vi.mock("@/utils/origins", async original => ({...await original<typeof import("
 const event = PublicEventInfoSchema.parse({EventID: "00000000-0000-4000-8000-000000000010", Tag: "event-a", Name: "Event A", StartTime: "2026-01-01T00:00:00Z", FinishTime: null, Status: 1, Participation: 1, Registration: 1, CanViewResults: false, CanViewParticipants: false, PreviewDescription: "", PreviewPicture: "", Theme: {Brand: "#123456", Accent: "", AccentLight: "#123456", AccentDark: "#123456", AccentLive: "#123456", Version: 1}});
 const question = {...fixtureChallenge, Snapshot: {...fixtureChallenge.Snapshot, name: "Pending task", description: {}}, SolvedAt: null, Hints: [], Lab: runningLab};
 const initial = ownBoardSchema.parse({ServerNow: "2026-10-08T12:00:00Z", Challenges: [question]});
-const runtime: LabRuntime = {Lab: completedLab, Phase: "Ready", Ready: true, VPNCIDR: "", InternetCIDR: "", Access: [], Queue: null};
+const runtime: LabRuntime = {Lab: completedLab, Phase: "Ready", Ready: true, Gateways: [], Access: [], Queue: null};
 function deferred<T>() {
     let resolve!: (value: T) => void;
     let reject!: (error: unknown) => void;

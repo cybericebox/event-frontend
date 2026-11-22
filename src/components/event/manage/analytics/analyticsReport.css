@@ -1,4 +1,4 @@
-/* «Звіт по заході»: a page on screen, a clean document in print. */
+/* “Event report”: a page on screen, a clean document in print. */
 .event-report__actions{display:flex;flex-wrap:wrap;gap:var(--ib-2)}
 .event-report__head{display:grid;gap:var(--ib-1)}
 .event-report__head h2{font-size:var(--ib-fs-20)}

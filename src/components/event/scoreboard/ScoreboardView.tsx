@@ -31,7 +31,7 @@ function isAccessDenied(error: unknown): boolean {
     return error instanceof ManageApiError && [401, 403, 404].includes(error.status);
 }
 
-// The participant and guest «Результати»: a chart of the leaders (plus the
+// The participant and guest “Results”: a chart of the leaders (plus the
 // viewer's own team) above a searchable ranking. The page exists in every
 // phase for whoever may read the results; before the start the table block
 // says when the ranking appears.
@@ -74,7 +74,7 @@ export function ScoreboardView() {
         retry: false,
         refetchOnWindowFocus: false,
     });
-    // «Автооновлення», no stream per viewer: every 30 s ±20 % the page asks
+    // “Auto-refresh”, no stream per viewer: every 30 s ±20 % the page asks
     // for the result changes after its snapshot (an unchanged answer is a
     // 304) and reloads the snapshot only when something visible changed. It
     // backs off after errors, pauses in a hidden tab and checks at once when

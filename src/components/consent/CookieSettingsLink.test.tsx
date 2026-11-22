@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// «Налаштування файлів cookie» is always in the event footer (no GA needed): a link to the
+// “Cookie settings” is always in the event footer (no GA needed): a link to the
 // main-site cookie policy that opens the consent panel instead of navigating.
 import {afterEach, describe, expect, it, vi} from "vitest";
 import {cleanup, fireEvent, render, screen} from "@testing-library/react";

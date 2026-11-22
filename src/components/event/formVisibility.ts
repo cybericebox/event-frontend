@@ -4,7 +4,7 @@ import {dateModeOf, parseDateAnswer} from "@/components/event/manage/participant
 
 function isField(block: FormBlock): block is FormField { return block.type === "field"; }
 
-// The answer a condition compares against. An untouched checkbox means «Ні»,
+// The answer a condition compares against. An untouched checkbox means “No”,
 // every other unanswered question has no value and never satisfies a condition.
 // A date answer compared in time: equals, not_equals, before or after.
 function dateMatches(source: FormField, operator: string, answer: Answer | undefined, expected: unknown): boolean {

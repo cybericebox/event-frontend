@@ -18,7 +18,7 @@ export type TeamDraft = {name: string; row: number; captainEmail: string; member
 export const inviteColumns = ["email", "first_name", "last_name"] as const;
 export const teamColumns = ["team", "email", "first_name", "last_name", "captain"] as const;
 
-// «так» is a data token of the uploaded file, not UI text.
+// “Yes” is a data token of the uploaded file, not UI text.
 // eslint-disable-next-line no-restricted-syntax -- CSV captain marks matched against uploaded files, not UI text
 const captainMarks = new Set(["так", "yes", "true", "1", "+", "x", "х"]);
 // eslint-disable-next-line no-restricted-syntax -- CSV captain marks matched against uploaded files, not UI text

@@ -12,10 +12,10 @@ export const formFieldSchema = z.object({
     id: z.string(), type: z.literal("field"), key: z.string(), input: formInputSchema,
     label: z.string(), help: z.string().optional(), required: z.boolean().optional(),
     options: z.array(z.string()).optional(),
-    // A «Файл» question: allowed formats and the size limit in MB.
+    // A “File” question: allowed formats and the size limit in MB.
     fileTypes: z.array(fileKindSchema).optional(),
     maxSizeMB: z.number().int().optional(),
-    // A «Дата / час» question: a day ("YYYY-MM-DD"), a time of day ("HH:MM") or a
+    // A “Date / time” question: a day ("YYYY-MM-DD"), a time of day ("HH:MM") or a
     // UTC ISO datetime, with optional limits. "none" is a draft with neither ticked.
     dateMode: z.enum(["date", "time", "datetime", "none"]).optional(),
     minDate: z.string().optional(),

@@ -206,13 +206,13 @@ it("preserves the mode cookie when no tab state is available without activating 
     expect(readPreviewCookie()).toBe("event-1");
 });
 
-// One switch, «Показати завдання», default off: on shows the test task board and launches the dynamic tasks' labs; off ends them.
+// One switch, “Show tasks”, default off: on shows the test task board and launches the dynamic tasks' labs; off ends them.
 const dynamic = (selection: string, run: string | null = null) => ({PreviewSelectionID: selection, PreviewDynamic: true, PreviewCanStart: true, PreviewRunID: run, Infrastructure: true});
 const staticTask = {PreviewSelectionID: "sel-static", PreviewDynamic: false, PreviewCanStart: true, PreviewRunID: null, Infrastructure: false};
 const boardOf = (...Challenges: object[]) => ({Challenges, Stages: [], ServerNow: "2026-10-20T10:00:00Z"});
 const on = {...state, tasks: true};
 
-it("offers one switch, «Показати завдання», off by default, and no separate infrastructure item", async () => {
+it("offers one switch, 'Show tasks', off by default, and no separate infrastructure item", async () => {
     localStorage.setItem(storageKey, JSON.stringify(state));
     api.board.mockResolvedValue(boardOf());
     view();

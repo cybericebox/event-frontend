@@ -12,7 +12,7 @@ function safeHref(href: string | undefined): string | undefined {
     try { const url = new URL(href); return url.protocol === "https:" && !url.username && !url.password ? url.href : undefined; } catch { return undefined; }
 }
 
-// Block «Партнери» (ds-v2 patterns/blocks/partners): named groups of logos,
+// Block “Partners” (ds-v2 patterns/blocks/partners): named groups of logos,
 // one height and one tone for every logo; a logo may link to its site.
 export function PartnersBlock({layoutProps, id, selected, heading, text, groups}: {
     layoutProps?: BlockLayoutProps;

@@ -150,7 +150,7 @@ it.each(["participant", "moderators"] as const)("keeps a known terminal question
     const known = {...fixtureChallenge, Lab: completedLab};
     const rows = reconcileChallenges(client, mode, "event-a", [known]);
     client.setQueryData(key, mode === "participant" ? {...ownBoardSchema.parse({ServerNow: "now"}), Challenges: rows} : rows);
-    const legacy: LabRuntime = {Lab: null, Phase: "Ready", Ready: true, Queue: null, VPNCIDR: "10.128.1.0/24", InternetCIDR: "", Access: [{Device: "web", Port: 80, Protocol: "http", URL: "https://legacy.test"}]};
+    const legacy: LabRuntime = {Lab: null, Phase: "Ready", Ready: true, Queue: null, Gateways: [{Name: "attack", Kind: "vpn", CIDR: "10.128.1.0/24", Ready: true}], Access: [{Device: "web", Port: 80, Protocol: "http", URL: "https://legacy.test"}]};
     const delayed = reconcileChallenges(client, mode, "event-a", [{...known, Lab: null}]);
     client.setQueryData(key, mode === "participant" ? {...ownBoardSchema.parse({ServerNow: "now"}), Challenges: delayed} : delayed);
     const scope = labAccessScope(client, mode, "event-a", known.EventChallengeID, null, legacy);
@@ -158,8 +158,8 @@ it.each(["participant", "moderators"] as const)("keeps a known terminal question
     expect(hasCurrentRuntime(legacy, scope.lifecycle ?? null)).toBe(false);
     const placeholders: SnapshotPlaceholder[] = [
         {key: "host", kind: "external.link", device_name: "web"},
-        {key: "ip", kind: "ip", ip_reference: "vpn", last_octet: 5, as_link: true, scheme: "http"},
-        {key: "network", kind: "vpn.subnet"},
+        {key: "ip", kind: "ip", ip_reference: "gateway", gateway: "attack", last_octet: 5, as_link: true, scheme: "http"},
+        {key: "network", kind: "gateway.subnet", gateway: "attack"},
     ];
     expect(descriptionValues(placeholders, legacy, null)).toEqual({variables: {host: "https://legacy.test", ip: "http://10.128.1.5", network: "10.128.1.0/24"}, links: {host: "https://legacy.test", ip: "http://10.128.1.5"}});
     expect(descriptionValues(placeholders, legacy, scope.lifecycle ?? null)).toEqual({variables: {host: "—", ip: "—", network: "—"}, links: {}});

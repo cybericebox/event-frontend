@@ -11,14 +11,14 @@ import {isFileAnswer, selfAnswerFileUrl} from "@/api/answerFiles";
 import {formatDateAnswer} from "@/components/event/DateAnswerInput";
 import {dateModeOf} from "@/components/event/manage/participantFormEditor";
 
-// Pieces shared by «Мій профіль учасника» and «Моя команда».
+// Pieces shared by “My participant profile” and “My team”.
 
 export function errorText(error: unknown, fallback: string): string {
     if (error instanceof EventTeamError || error instanceof ParticipantJoinError) return apiErrorText(error, fallback);
     return fallback;
 }
 
-// busy: the action in the present tense («Передаємо…»), shown in the confirm button while it runs.
+// busy: the action in the present tense (“Transferring”), shown in the confirm button while it runs.
 export type Confirm = {title: string; text: string; action: string; busy: string; danger?: boolean; run: () => Promise<void>} | null;
 
 export function TeamConfirm({confirm, onClose}: {confirm: Confirm; onClose: () => void}) {

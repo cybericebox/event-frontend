@@ -28,7 +28,7 @@ function wrap(node: React.ReactNode) {
 
 afterEach(() => {cleanup(); manager.canManage = true; router.push.mockClear(); router.replace.mockClear(); vi.restoreAllMocks();});
 
-describe("Шаблони: тригерні й власні в одному списку", () => {
+describe("Templates: triggered and custom in one list", () => {
     it("lists the triggered templates unchanged and the custom ones of the channel, with a type column and filter", async () => {
         const calls = fakeServer("email", [subscription(FINISHED, "email"), subscription(REMINDER, "email", {Enabled: false})], [emailTemplate(1, FINISHED), emailTemplate(2, REMINDER)],
             [customTemplate(70, {Name: "Технічна перерва"}), customTemplate(71, {Name: "Лише в застосунку", Channels: ["in_app"]})]);
@@ -81,7 +81,7 @@ describe("Шаблони: тригерні й власні в одному сп�
     });
 });
 
-describe("Власний шаблон: редактор", () => {
+describe("Custom template: editor", () => {
     function server(extra?: (call: {method: string; path: string; body: unknown}) => unknown | Response | undefined) {
         const calls: {method: string; path: string; body: unknown}[] = [];
         globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -167,7 +167,7 @@ describe("Власний шаблон: редактор", () => {
     });
 });
 
-describe("Власний шаблон: модель", () => {
+describe("Custom template: model", () => {
     it("keeps exactly the template's channels and saves only their parts", () => {
         const message = templateMessage(customTemplate(6, {Channels: ["in_app"], Subject: "старе", InAppTitle: "Привіт"}) as never);
         expect(message.email).toBe(false);

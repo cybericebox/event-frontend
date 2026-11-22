@@ -10,7 +10,7 @@
 .event-live-editor__status button{padding:0;border:0;background:none;color:var(--ib-ink);font:inherit;text-decoration:underline;cursor:pointer}
 .event-live-field__label{color:var(--ib-dim);font-size:var(--ib-fs-12);line-height:1.3}
 
-/* Scenes: one tab per event state, its name over its status («зараз», «своя», «як «Триває»»). */
+/* Scenes: one tab per event state, its name over its status (“now”, “own”, “as “In progress””). */
 /* The state tabs: a one-line segmented control in the toolbar row, at the height of its fields. */
 .event-live-scenes__tabs{display:flex;flex-wrap:wrap;align-self:flex-end;gap:2px;max-width:100%;padding:3px;border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-seg-bg,var(--ib-paper));scrollbar-width:none}
 /* The mode select is as wide as its longer option. */
@@ -32,7 +32,7 @@
 .event-live-editor__tool .event-select{width:170px}
 .event-live-editor__template{align-self:start;white-space:nowrap}
 .event-live-editor__applied{color:var(--ib-dim);font-size:var(--ib-fs-12)}
-/* «Шаблон розкладки» dialog: a grid of live template cards. */
+/* “Layout template” dialog: a grid of live template cards. */
 .event-dialog:has(.event-live-templates){--ib-modal-w:820px}
 .event-live-templates{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:var(--ib-3)}
 .event-live-template{display:grid;align-content:start;gap:6px;padding:8px;border:1px solid var(--ib-line);border-radius:var(--ib-r);background:var(--ib-paper);color:var(--ib-ink);font:inherit;text-align:left;cursor:pointer}
@@ -42,7 +42,7 @@
 .event-live-template strong{font-size:var(--ib-fs-14,14px);font-weight:var(--ib-w-semibold,600)}
 .event-live-template>span:last-child{color:var(--ib-dim);font-size:var(--ib-fs-12);line-height:1.35}
 .event-live-template strong em{margin-left:6px;color:var(--ib-dim);font-size:var(--ib-fs-12);font-style:normal;font-weight:var(--ib-w-medium,500)}
-/* «Повний показ»: the three scenes of the chain side by side, across the whole row. */
+/* “Full show”: the three scenes of the chain side by side, across the whole row. */
 .event-live-template--show{grid-column:1/-1}
 .event-live-template__scenes{display:flex;gap:var(--ib-2);flex-wrap:wrap}
 .event-live-template__scenes>span{display:grid;gap:4px}
@@ -74,7 +74,7 @@
 .event-live-palette-preview p{margin:0;color:var(--ib-dim);font-size:var(--ib-fs-13)}
 .event-live-palette-preview .event-live-palette-preview__blocked{color:var(--ib-warn)}
 
-/* «Перегляд»: the screen over the whole window, scaled to fit, on black like a
+/* “Preview”: the screen over the whole window, scaled to fit, on black like a
    switched-off projector around it; the controls in the corner. */
 .event-live-show{position:fixed;inset:0;z-index:300;display:grid;background:#000}
 .event-live-show__stage{display:grid;place-items:center;min-width:0;min-height:0;overflow:hidden}
@@ -99,7 +99,7 @@
 .event-live-editor__format-mode{display:flex;align-items:center;gap:4px}
 .event-live-editor__format-note{margin:0;color:var(--ib-dim);font-size:var(--ib-fs-12)}
 .event-live-editor__stage-note{color:var(--ib-dim);font-size:var(--ib-fs-12);font-variant-numeric:tabular-nums}
-/* «Перегляд»: the target resolution of the preview (K1). */
+/* “Preview”: the target resolution of the preview (K1). */
 .event-live-editor__preview{display:flex;align-items:center;gap:var(--ib-2)}
 .event-live-editor__preview>span{color:var(--ib-dim);font-size:var(--ib-fs-12)}
 .event-live-editor__stage-meta{position:relative;display:flex;align-items:center;justify-content:space-between;gap:var(--ib-2);min-height:24px;flex-wrap:wrap}
@@ -213,7 +213,7 @@
   .event-live-scene{min-width:0}
 }
 
-/* «Посилання для екрана» dialog. */
+/* “Screen link” dialog. */
 .event-dialog:has(.event-live-links){--ib-modal-w:640px}
 .event-live-links{display:grid;gap:var(--ib-4)}
 .event-live-links__create{display:flex;align-items:flex-end;gap:var(--ib-2);flex-wrap:wrap}
@@ -230,7 +230,7 @@
 
 .event-live-logo-row>.event-manage-validation{grid-column:1/-1;min-width:0}
 
-/* «Свої зображення» of places 1–3: three square pickers in a row. */
+/* “Own pictures” of places 1–3: three square pickers in a row. */
 .event-live-place-images{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--ib-2)}
 .event-live-place-image{position:relative;display:grid;gap:4px;color:var(--ib-dim);font-size:var(--ib-fs-12);cursor:pointer}
 .event-live-place-image__box{display:grid;place-items:center;aspect-ratio:1;overflow:hidden;border:1px dashed var(--ib-line);border-radius:var(--ib-r-sm);background:var(--ib-paper);color:var(--ib-dim)}
@@ -255,14 +255,14 @@
 .event-live-settings__tabs{margin-bottom:var(--ib-2)}
 .event-live-settings__panel{display:grid;gap:var(--ib-3)}
 
-/* «Екран»: the select of the event's screens and the actions on the open one, in the header. */
+/* “Screen”: the select of the event's screens and the actions on the open one, in the header. */
 .event-live-screens{display:flex;align-items:center;flex-wrap:wrap;gap:var(--ib-2);min-width:0}
 .event-live-screens__label{color:var(--ib-dim);font-size:var(--ib-fs-13)}
 .event-live-screens .event-select{width:auto;min-width:12rem;max-width:20rem}
 .event-live-screens>.event-manage-validation{flex-basis:100%}
 
 /* A compact editor (owner, 2026-10-22): one header row (title, screen, status,
-   undo and the icon actions, «Опублікувати»), one toolbar row with the labels
+   undo and the icon actions, “Publish”), one toolbar row with the labels
    beside their fields, the screen at the top of its column. */
 .event-live-editor__heading{flex-wrap:nowrap}
 .event-live-editor__heading>.event-live-screens{margin-right:auto}

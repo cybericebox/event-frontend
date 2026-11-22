@@ -5,12 +5,10 @@ import type {ManageInAppTemplateInput} from "@/api/manageNotifications";
 import {NotificationMessageCard} from "@/components/event/NotificationMessageCard";
 import {popInBodyHTML, popInDuration} from "@/components/event/NotificationPopIn";
 import {t} from "@/i18n/t";
+import {safeHref} from "@/components/event/inboxModel";
 import {fillSamples} from "./notificationModel";
 
-function safeHref(value: string): boolean {
-    const href = value.trim();
-    return (href.startsWith("/") && !href.startsWith("//")) || href.startsWith("#") || /^https?:\/\/|^mailto:/i.test(href);
-}
+const hrefIsSafe = (value: string) => safeHref(value) !== null;
 
 // A read-only preview of an in-app notification, drawn like the real ones: the
 // row of the inbox list (text only, like the list shows it) and the pop-in
@@ -19,8 +17,8 @@ export function InAppPreview({template, values, surface}: {template: ManageInApp
     const title = fillSamples(template.Title, values);
     const body = fillSamples(template.Body, values, true);
     const link = fillSamples(template.Link, values);
-    const action = template.Actions.find(item => item.label && safeHref(item.href));
-    const inboxAction = safeHref(link) && link.trim() ? t("inbox.open") : null;
+    const action = template.Actions.find(item => item.label && hrefIsSafe(item.href));
+    const inboxAction = hrefIsSafe(link) && link.trim() ? t("inbox.open") : null;
     const seconds = popInDuration(template.AutoDismissMs) / 1000;
     return <div className="event-manage-notifications__stage">
         {surface !== "toast" && <div className="event-manage-notifications__stage-item">

@@ -24,7 +24,7 @@ describe("a required field the person still owes", () => {
         expect(changedEditableAnswers(form, before, after, ["club"])).toEqual({city: "Lviv", club: "Chess"});
     });
 
-    it("is marked «Заповніть» and opens the form even when nothing is editable", () => {
+    it("is marked 'Fill in' and opens the form even when nothing is editable", () => {
         const locked: ParticipantForm = {...form, Document: {blocks: [field("club", {required: true})]}};
         render(<AnswersCard scope="participant" title="Анкета" form={locked} answers={{}} missing={["club"]} canEdit onSave={vi.fn()} />);
         expect(screen.getAllByText("Заповніть", {selector: ".ib-tag"}).length).toBeGreaterThan(0);

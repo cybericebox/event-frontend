@@ -12,7 +12,19 @@ describe("buildCsp", () => {
 
     it("sets the hard lockdown directives", () => {
         const csp = buildCsp("n", prod);
-        for (const d of ["object-src 'none'", "base-uri 'self'", "frame-ancestors 'none'", "form-action 'self'", "upgrade-insecure-requests"]) expect(csp).toContain(d);
+        for (const d of ["object-src 'none'", "base-uri 'self'", "frame-ancestors 'none'", "upgrade-insecure-requests"]) expect(csp).toContain(d);
+    });
+
+    it("lets a form post to the lab hosts and nowhere else", () => {
+        expect(directive(buildCsp("n", prod), "form-action")).toBe("form-action 'self' https://*.labs.example.test");
+        const extra = directive(buildCsp("n", {...prod, NEXT_PUBLIC_LAB_DOMAINS: "labs.other.test, labs.example.test,LABS.third.test"}), "form-action");
+        expect(extra).toBe("form-action 'self' https://*.labs.example.test https://*.labs.other.test https://*.labs.third.test");
+    });
+
+    it("drops lab domain entries that are not plain domain names", () => {
+        const bad = "https://evil.test,evil.test:8080,evil.test/path,*.evil.test,x;script-src *,localhost,,a b.test";
+        expect(directive(buildCsp("n", {...prod, NEXT_PUBLIC_LAB_DOMAINS: bad}), "form-action")).toBe("form-action 'self' https://*.labs.example.test");
+        expect(buildCsp("n", {...prod, NEXT_PUBLIC_LAB_DOMAINS: bad})).not.toContain("evil");
     });
 
     it("takes the API origin from env and adds no analytics hosts without a GA id", () => {

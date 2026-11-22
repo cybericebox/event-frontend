@@ -1,4 +1,4 @@
-/* /manage challenges group: «Налаштування», «Групи й порядок», «Завдання». */
+/* /manage challenges group: “Settings”, “Groups and order”, “Task”. */
 
 /* Sortable list: grip + main + actions on one thin row. */
 .event-sortable{display:grid;gap:var(--ib-1);margin:0;padding:0;list-style:none}
@@ -10,7 +10,7 @@
 button.event-sortable__main{cursor:pointer}
 .event-sortable__actions{display:flex;align-items:center;flex:none;gap:2px}
 
-/* «Групи й порядок»: groups | tasks of the selected group. */
+/* “Groups and order”: groups | tasks of the selected group. */
 .event-group-order{display:grid;grid-template-columns:minmax(340px,440px) minmax(0,1fr);gap:var(--ib-5);align-items:start}
 .event-group-order__groups,.event-group-order__tasks{display:grid;gap:var(--ib-3);min-width:0}
 .event-group-order__head{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-3)}
@@ -23,7 +23,7 @@ button.event-sortable__main{cursor:pointer}
 .event-group-order__task small{overflow:hidden;text-overflow:ellipsis;flex:0 1 auto;min-width:0}
 .event-group-order__position{display:grid;place-items:center;flex:none;width:24px;height:24px;border-radius:var(--ib-r);background:var(--ib-soft);color:var(--ib-dim);font-size:var(--ib-fs-12)}
 
-/* «Завдання»: collapsible sets with thin task rows. */
+/* “Task”: collapsible sets with thin task rows. */
 .event-exercise-set__head{cursor:pointer}
 .event-exercise-set__side{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:var(--ib-2)}
 .event-exercise-set__title h3{cursor:pointer}
@@ -74,7 +74,7 @@ button.event-sortable__main{cursor:pointer}
 .event-task__note{margin:0;color:var(--ib-dim);font-size:var(--ib-fs-13)}
 .event-task__save{justify-self:start}
 
-/* «Налаштування». */
+/* “Settings”. */
 .event-challenge-settings__kind{margin:0;padding:0;border:0}
 .event-challenge-settings__fields{display:grid;gap:var(--ib-4)}
 .event-challenge-settings__fields>.event-manage-field{max-width:280px}
@@ -145,7 +145,7 @@ button.event-sortable__main{cursor:pointer}
 .event-exercise-set__warning--warn>svg{flex:none}
 .event-exercise-set__warn-mark{display:inline-flex;align-items:center;color:var(--ib-warn);cursor:help}
 .event-exercise-set__warn-mark:focus-visible{outline:2px solid var(--ib-action);outline-offset:2px;border-radius:var(--ib-r-sm)}
-/* «Ресурси на команду»: a disclosure, collapsed by default, the per-team total in its header. */
+/* “Resources per team”: a disclosure, collapsed by default, the per-team total in its header. */
 .event-resource-plan__toggle{display:flex;flex-wrap:wrap;align-items:center;gap:var(--ib-1) var(--ib-2);width:100%;padding:0;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
 .event-resource-plan__toggle:focus-visible{outline:2px solid var(--ib-action);outline-offset:2px;border-radius:var(--ib-r-sm)}
 .event-resource-plan__chevron{flex:none;color:var(--ib-dim);transition:transform var(--ib-dur-move) var(--ib-ease)}
@@ -189,7 +189,7 @@ button.event-sortable__main{cursor:pointer}
 }
 .event-exercise-set__tags{display:inline-flex;align-items:center;gap:var(--ib-2)}
 .event-exercise-set__tags--details{display:none;color:var(--ib-dim);font-size:var(--ib-fs-12)}
-/* Bulk selection: «Вибрати всі» above the sets; the bar with the count and the actions while something is selected. */
+/* Bulk selection: “Select all” above the sets; the bar with the count and the actions while something is selected. */
 .event-bulk-select{display:grid;gap:var(--ib-2)}
 .event-bulk-select__all{display:inline-flex;align-items:center;gap:var(--ib-2);font-size:var(--ib-fs-13);color:var(--ib-dim);cursor:pointer}
 .event-bulk-select__all input,.event-exercise-set__pick{width:16px;height:16px;margin:0;accent-color:var(--ib-action);flex:none;cursor:pointer}
@@ -202,7 +202,7 @@ button.event-sortable__main{cursor:pointer}
 .event-bulk-bar__result p{margin:0}
 .event-bulk-bar__result ul,.event-bulk-bar__attempted ul{margin:var(--ib-1) 0 0;padding-left:var(--ib-5);color:var(--ib-dim)}
 .event-bulk-bar__attempted{display:block;margin-top:var(--ib-2)}
-/* «Ресурси на команду» and the task list are two blocks: a clear gap between them. */
+/* “Resources per team” and the task list are two blocks: a clear gap between them. */
 .event-challenge-manager .event-resource-plan{margin-bottom:var(--ib-4)}
 /* The lab mark next to the name: the catalog's three-node icon; it opens the lab's resources. */
 .event-exercise-infra-trigger{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;padding:0;border:0;border-radius:var(--ib-r-sm);background:transparent;color:var(--ib-action);cursor:pointer}
@@ -228,16 +228,16 @@ button.event-sortable__main{cursor:pointer}
   .event-exercise-infra-trigger::after,.event-exercise-set__side .event-subtask-count__trigger::after,.event-set-popover__badge::after{content:"";position:absolute;inset:50% auto auto 50%;width:max(100%,44px);height:44px;transform:translate(-50%,-50%)}
 }
 @media(max-width:640px){.event-exercise-set__side .event-exercise-set__stats{gap:var(--ib-2)}}
-/* Phones: the scoring badge in one word («Власне», «Заходу»), so the card keeps two lines. */
+/* Phones: the scoring badge in one word (“Own”, “Event”), so the card keeps two lines. */
 .event-set-popover__short{display:none}
 @media(max-width:640px){.event-set-popover__long{display:none}.event-set-popover__short{display:inline}}
 
-/* «Основні завдання»: the event-wide task figures above the resource plan. */
+/* “Main challenges”: the event-wide task figures above the resource plan. */
 .event-task-stats{display:grid;gap:var(--ib-3);margin-bottom:var(--ib-4)}
 .event-task-stats__row{display:flex;flex-wrap:wrap;align-items:center;gap:var(--ib-2)}
 .event-task-stats__row-label{color:var(--ib-dim);font-size:var(--ib-fs-13)}
 .event-task-stats__chips{display:flex;flex-wrap:wrap;gap:var(--ib-1);margin:0;padding:0;list-style:none}
-/* «Додати з каталогу»: multi-select filter chips (difficulty) and the count line. */
+/* “Add from catalog”: multi-select filter chips (difficulty) and the count line. */
 .event-exercise-picker__filter--chips{flex-wrap:wrap}
 .event-filter-chips{display:flex;flex-wrap:wrap;gap:6px}
 .event-filter-chips>button{min-height:30px;padding:0 10px;border:1px solid var(--ib-line);border-radius:999px;background:var(--ib-paper);color:var(--ib-dim);font:inherit;font-size:var(--ib-fs-13);cursor:pointer}

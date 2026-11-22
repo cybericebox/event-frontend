@@ -41,7 +41,7 @@ describe("TemplateActions", () => {
         expect(screen.queryByRole("button", {name: /Видалити чернетку/})).toBeNull();
     });
 
-    it("offers only «Налаштувати для заходу» on the platform template", () => {
+    it("offers only 'Customize for this event' on the platform template", () => {
         const handlers = setup("platform");
         expect(screen.queryByRole("button", {name: /Відновити шаблон за замовчуванням/})).toBeNull();
         fireEvent.click(screen.getByRole("button", {name: "Налаштувати для заходу"}));

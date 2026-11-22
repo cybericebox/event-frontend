@@ -4,17 +4,17 @@ import type {ContentRichText} from "./richTextState";
 import {matchesProxyDestination} from "./proxyDestination";
 import {CopyBlock} from "./CopyBlock";
 import {t} from "@/i18n/t";
+import {safeLinkHref} from "@/utils/safeUrl";
 
 type Node = Record<string, unknown>;
 type Value = string | number | boolean | null;
 type Display = {format: "date-time" | "date" | "time" | "short" | "custom"; pattern?: string};
+// Names come from organiser content: only a key the map really holds counts, never an inherited member such as "constructor".
+const own = <T,>(map: Record<string, T> | undefined, name: string): T | undefined => map && Object.hasOwn(map, name) ? map[name] : undefined;
 const asNode = (value: unknown): Node | null => value && typeof value === "object" && !Array.isArray(value) ? value as Node : null;
 
-function safeHref(href: unknown): string | null {
-    if (typeof href !== "string" || !href || /[\\\r\n\t]/.test(href) || href.startsWith("//")) return null;
-    if (href.startsWith("/") || href.startsWith("#")) return href;
-    try {const url = new URL(href); return url.protocol === "https:" && !url.username && !url.password ? url.href : null;} catch {return null;}
-}
+// Rich text links: a site path, an anchor or an https address.
+const safeHref = (href: unknown): string | null => typeof href === "string" ? safeLinkHref(href, {schemes: ["https:"], anchors: true}) : null;
 function alignment(node: Node): CSSProperties | undefined {
     const format = node.format;
     const value = typeof format === "string" ? format : ({1: "left", 2: "center", 3: "right", 4: "justify"} as Record<number, string>)[Number(format)];
@@ -54,8 +54,8 @@ export function EventRichTextView({value, variables = {}, links = {}, dateDispla
     if (root?.type !== "root" || !Array.isArray(root.children) || !root.children.length) return <>{emptyFallback ?? null}</>;
     function variableText(node: Node): string {
         const name = typeof node.varName === "string" ? node.varName : "";
-        const raw = variables[name];
-        const display = dateDisplays?.[name];
+        const raw = own(variables, name);
+        const display = own(dateDisplays, name);
         return typeof raw === "string" && display && !Number.isNaN(Date.parse(raw)) ? formatDateTime(raw, display.format, display.pattern)
             : typeof raw === "boolean" ? raw ? t("common.yes") : t("common.no") : raw == null ? "—" : String(raw);
     }
@@ -68,8 +68,8 @@ export function EventRichTextView({value, variables = {}, links = {}, dateDispla
                 const parts = Array.isArray(node.children) ? node.children.map(asNode).filter((child): child is Node => !!child) : [];
                 const text = parts.map(child => child.type === "text" && typeof child.text === "string" ? child.text : child.type === "variable" ? variableText(child) : "").join("").replace(/[\r\n]+/g, " ");
                 const unresolved = parts.some(child => child.type === "variable" && variableText(child) === "—");
-                const proxyVariable = parts.find(child => child.type === "variable" && typeof child.varName === "string" && openVariables?.[child.varName] && matchesProxyDestination(text, variableText(child)));
-                return <CopyBlock key={key} value={text} openUrl={unresolved ? "" : undefined} onOpen={proxyVariable ? openVariables?.[String(proxyVariable.varName)] : undefined} labels={{copy: t("content.copyBlock.copy"), copied: t("content.copyBlock.copied"), open: t("content.copyBlock.open"), copyFailed: t("content.copyBlock.failed")}} />;
+                const proxyVariable = parts.find(child => child.type === "variable" && typeof child.varName === "string" && own(openVariables, child.varName) && matchesProxyDestination(text, variableText(child)));
+                return <CopyBlock key={key} value={text} openUrl={unresolved ? "" : undefined} onOpen={proxyVariable ? own(openVariables, String(proxyVariable.varName)) : undefined} labels={{copy: t("content.copyBlock.copy"), copied: t("content.copyBlock.copied"), open: t("content.copyBlock.open"), copyFailed: t("content.copyBlock.failed")}} />;
             }
             case "text": return <span key={key}>{formattedText(typeof node.text === "string" ? node.text : "", node.format)}</span>;
             case "variable": {
@@ -77,8 +77,9 @@ export function EventRichTextView({value, variables = {}, links = {}, dateDispla
                 if (!name) return null;
                 const text = variableText(node);
                 const formats = Array.isArray(node.formats) ? node.formats : [];
-                const href = variableHref(links[name]);
-                if (href) return <a key={key} className="event-lexical__link" href={href} target="_blank" rel="noopener noreferrer" data-event-variable={name} onClick={openVariables?.[name] ? event => {event.preventDefault(); openVariables[name](href);} : undefined}>{text}</a>;
+                const href = variableHref(own(links, name));
+                const open = own(openVariables, name);
+                if (href) return <a key={key} className="event-lexical__link" href={href} target="_blank" rel="noopener noreferrer" data-event-variable={name} onClick={open ? event => {event.preventDefault(); open(href);} : undefined}>{text}</a>;
                 return <span key={key} data-event-variable={name}
                     style={{fontWeight: formats.includes("bold") ? 700 : undefined, fontStyle: formats.includes("italic") ? "italic" : undefined,
                         textDecoration: [formats.includes("underline") ? "underline" : "", formats.includes("strikethrough") ? "line-through" : ""].filter(Boolean).join(" ") || undefined}}>{text}</span>;

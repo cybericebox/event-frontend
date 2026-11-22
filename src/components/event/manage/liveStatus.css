@@ -1,4 +1,4 @@
-/* LiveStatus: the «Наживо» / «Автооновлення» chip with the last update time. */
+/* LiveStatus: the “Live” / “Auto-refresh” chip with the last update time. */
 .event-live-status{display:flex;flex:none;align-items:center;gap:var(--ib-2)}
 .event-live-status__body{display:grid;justify-items:end;gap:2px;border-radius:var(--ib-r-sm);text-align:right}
 .event-live-status__body:focus-visible{outline:2px solid var(--ib-action);outline-offset:2px}

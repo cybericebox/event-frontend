@@ -7,9 +7,9 @@ import {t, tPlural} from "@/i18n/t";
 const pad = (value: number) => String(value).padStart(2, "0");
 const MAX_TIMEOUT = 2_000_000_000;
 
-// The compact countdown at the top of «Завдання» and «Результати»: «До старту»
-// before the start, «До завершення» during the last minutes before the finish,
-// «Захід завершено» after it. It follows the schedule by itself: it ticks each
+// The compact countdown at the top of “Task” and “Results”: “Before start”
+// before the start, “Until finish” during the last minutes before the finish,
+// “The event has finished” after it. It follows the schedule by itself: it ticks each
 // second while a time is shown and otherwise sleeps until the next boundary.
 // `hint` is the line under the start label; `showFinished` = false leaves the
 // end state to the page (the challenges page has its own finished banner).

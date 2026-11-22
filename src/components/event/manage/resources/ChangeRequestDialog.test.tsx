@@ -23,7 +23,7 @@ function renderForm() {
 }
 
 describe("ChangeRequestDialog", () => {
-    it("has exactly the fields «На скільки більше», «Продовжити до» and «Причина»", () => {
+    it("has exactly the fields 'How much more', 'Extend until' and 'Reason'", () => {
         renderForm();
         expect(screen.getByLabelText("На скільки більше, ГБ")).toBeTruthy();
         expect(screen.getByText("Продовжити до")).toBeTruthy();

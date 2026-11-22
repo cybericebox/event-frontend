@@ -68,7 +68,7 @@ function actionCopy(action: Action): {title: string; description: string; confir
     return {title: t("manage.exercises.action.detach.title"), description: t("manage.exercises.action.detach.description"), confirm: t("manage.exercises.action.detach.confirm"), busy: t("common.busy.removing"), danger: true};
 }
 
-// «Завдання»: the event's sets, each collapsible, with its tasks as thin rows.
+// “Task”: the event's sets, each collapsible, with its tasks as thin rows.
 // What the flag pool means for the teams: already repeating, or how many flags against how many teams.
 export function flagRepeatText(repeat: EventExerciseAttachment["FlagsRepeat"], name: string): string | null {
     if (!repeat) return null;

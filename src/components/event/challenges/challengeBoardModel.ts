@@ -1,7 +1,7 @@
 import type {BoardStage, OwnChallenge} from "@/api/participantChallenges";
 import {t, tPlural} from "@/i18n/t";
 
-// "" is «Усі» and the default, so a task that was just solved stays on the board; «Відкриті» narrows it. Tasks of closed stages are reached through «Закриті».
+// "" is “All” and the default, so a task that was just solved stays on the board; “Open” narrows it. Tasks of closed stages are reached through “Closed”.
 export type BoardStatus = "" | "open" | "solved" | "closed";
 export type BoardFilters = {stage: string; status: BoardStatus; group: string[]};
 export const UNSTAGED = "none";
@@ -63,7 +63,7 @@ export function boardStatus(challenge: OwnChallenge, stages: BoardStage[] = []):
 
 const stageOf = (challenge: OwnChallenge, stages: BoardStage[]) => challenge.StageID ? stages.find(stage => stage.ID === challenge.StageID) : undefined;
 
-// «Відкриті» = can be solved now: not solved, not locked by an unmet prerequisite, and its stage (if any) is open. A stage the
+// “Open” = can be solved now: not solved, not locked by an unmet prerequisite, and its stage (if any) is open. A stage the
 // board does not list yet has not opened.
 export function isSolvableNow(challenge: OwnChallenge, stages: BoardStage[]): boolean {
     if (challenge.SolvedAt || challenge.Practice || challenge.Closed || challenge.Locked) return false;
@@ -82,7 +82,7 @@ export function applyBoardFilters(challenges: OwnChallenge[], filters: BoardFilt
 
 const STATUSES: BoardStatus[] = ["open", "solved", "closed"];
 
-// The filters live in the URL: ?stage=…&status=…&group=… (the default «Усі» is left out).
+// The filters live in the URL: ?stage=…&status=…&group=… (the default “All” is left out).
 export function parseBoardFilters(search: string): BoardFilters {
     const params = new URLSearchParams(search);
     const status = params.get("status");
@@ -123,7 +123,7 @@ export function lockedLabel(challenge: OwnChallenge): string {
     return names.length ? t("challenges.locked.after", {names: names.join(", ")}) : t("challenges.locked.later");
 }
 
-// «Команду не допущено: потрібно ще N учасників».
+// “Team not admitted: N more participants needed”.
 export function missingMembers(memberCount: number, minTeamSize: number | null | undefined): number {
     return Math.max(0, (minTeamSize ?? 0) - memberCount);
 }

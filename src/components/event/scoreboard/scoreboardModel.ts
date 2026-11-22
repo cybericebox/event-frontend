@@ -3,7 +3,7 @@ import {tPlural} from "@/i18n/t";
 import {jitter} from "@/utils/jitter";
 import {resultsLinkVisible, viewerResultsAvailability, type ResultsAvailability} from "@/types/resultsAvailability";
 
-// «6 команд» / «1 учасник» — the scoreboard counts in the event's wording.
+// “6 teams” / “1 participant” — the scoreboard counts in the event's wording.
 export function unitCount(count: number, teamMode: boolean): string {
     return tPlural(teamMode ? "scoreboard.teams" : "scoreboard.participants", count);
 }
@@ -22,7 +22,7 @@ export function searchScoreboard(snapshot: ManageResultsSnapshot, search: string
 }
 
 export type ScoreboardAccess = {
-    // The «Результати» item in the navbar and the footer.
+    // The “Results” item in the navbar and the footer.
     nav: boolean;
     // The results are read now (the API serves them to this viewer).
     fetch: boolean;

@@ -11,5 +11,7 @@ export default defineConfig({
         TZ: "Europe/Kyiv",
         NEXT_PUBLIC_DOMAIN: "example.test",
         NEXT_PUBLIC_SUPPORT_EMAIL: "support@example.test",
+        NEXT_PUBLIC_COOKIES_URL: "https://example.test/cookies",
+        NEXT_PUBLIC_MAIN_SITE_URL: "https://example.test",
     }},
 });

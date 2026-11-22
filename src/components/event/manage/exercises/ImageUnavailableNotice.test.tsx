@@ -11,7 +11,7 @@ import {ImageUnavailableNotice} from "./ImageUnavailableNotice";
 
 afterEach(cleanup);
 
-describe("Образ недоступний", () => {
+describe("Image unavailable", () => {
     it("reads the availability response and keys it by attachment", async () => {
         globalThis.fetch = vi.fn(async () => new Response(JSON.stringify({Status: {Code: 0}, Data: [
             {EventExerciseID: "a1", ExerciseID: "x1", ExerciseName: "Web", Unavailable: [{Image: "acme/web:1", Status: "unavailable", Reason: "needs_event_secret"}]},

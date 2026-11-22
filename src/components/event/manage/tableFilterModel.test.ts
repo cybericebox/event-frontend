@@ -19,7 +19,7 @@ describe("date modes", () => {
         {...field("at", "date"), dateMode: "datetime" as const},
     ]);
 
-    it("keeps the mode of «Дата / час» questions and sends matching bounds", () => {
+    it("keeps the mode of 'Date / time' questions and sends matching bounds", () => {
         expect(dated.map(spec => spec.mode)).toEqual(["date", "time", "datetime"]);
         expect(toTableFilters(dated, {day: {from: "2026-09-01"}, slot: {from: "09:00", to: "9:5"}, at: {to: "2026-09-29T12:00"}})).toEqual([
             {Key: "day", Op: "range", Type: "date", From: "2026-09-01"},

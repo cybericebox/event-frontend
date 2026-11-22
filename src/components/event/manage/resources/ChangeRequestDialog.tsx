@@ -12,7 +12,7 @@ import {t} from "@/i18n/t";
 import {buildChangeRequest, changeRequestErrors, emptyDraft, enlarged, formatGB, resourceErrorMessage, type ChangeDraft} from "./resourcesModel";
 import "./resources.css";
 
-// The request for more: «на скільки більше» (GB) and/or «продовжити до», with a reason. Only the submit button is busy.
+// The request for more: “how much more” (GB) and/or “Extend until”, with a reason. Only the submit button is busy.
 export function ChangeRequestDialog({eventID, allocated, to, open, onClose, onSent}: {eventID: string; allocated: Amount; to: string | null; open: boolean; onClose: () => void; onSent: () => void}) {
     const [draft, setDraft] = useSessionDraftState<ChangeDraft>("resource-request", emptyDraft);
     const [issues, setIssues] = useState<ReturnType<typeof changeRequestErrors>>({});

@@ -13,7 +13,7 @@ function ActionMessage({text}: {text: string; action: ToastAction}) {
     return text;
 }
 
-// An error toast with an action (e.g. «Спробувати ще раз»): the click closes the toast and runs the action.
+// An error toast with an action (e.g. “Try again”): the click closes the toast and runs the action.
 export function toastErrorWithAction(text: string, action: ToastAction): string {
     return toast.error(<ActionMessage text={text} action={action} />);
 }

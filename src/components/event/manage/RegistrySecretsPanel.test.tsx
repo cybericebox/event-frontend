@@ -39,7 +39,7 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-describe("Реєстри образів заходу", () => {
+describe("Event image registries", () => {
     it("shows the empty state when there are no secrets", async () => {
         mockApi([]);
         renderPanel();

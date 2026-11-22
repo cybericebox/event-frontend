@@ -31,8 +31,8 @@ const challenge = {
         ...fixtureChallenge.Snapshot,
         description: {root: {type: "root", children: [{type: "paragraph", children: [text("Відкрийте "), variable("ph_link"), text(" або "), variable("ph_plain"), variable("ph_external"), {type: "link", url: "https://organizer.test/help", children: [text("Довідка")]}]}, {type: "copy-block",version:1,direction:"ltr",format:"",indent:0,children:[variable("ph_external")]}]}},
         placeholders: [
-            {key: "ph_link", kind: "ip", ip_reference: "vpn", last_octet: 5, as_link: true, scheme: "https", port: 8443, path: "/panel"},
-            {key: "ph_plain", kind: "ip", ip_reference: "vpn", last_octet: 6},
+            {key: "ph_link", kind: "ip", ip_reference: "gateway", gateway: "attack", last_octet: 5, as_link: true, scheme: "https", port: 8443, path: "/panel"},
+            {key: "ph_plain", kind: "ip", ip_reference: "gateway", gateway: "attack", last_octet: 6},
             {key: "ph_external", kind: "external.link", device_name: "web"},
         ],
     },

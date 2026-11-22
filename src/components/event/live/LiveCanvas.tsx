@@ -51,8 +51,8 @@ function frozenAt(results?: ManageResultsSnapshot): string | null {
 }
 
 // A note under the timer, or in the title when the screen has no timer:
-// «Немає звʼязку · дані на 12:03» while the data is not live, else
-// «Заморожено о 10:59» while the results are frozen.
+// “No connection · data as of 12:03” while the data is not live, else
+// “Frozen at 10:59” while the results are frozen.
 export type LiveNote = {kind: "offline" | "freeze"; text: string};
 
 function liveNote(results: ManageResultsSnapshot | undefined, offlineSince: number | null): LiveNote | null {
@@ -93,7 +93,7 @@ function LiveChart({widget, event, results, now, theme, sample, metrics, suffix}
     // One caption line is the unit of the chart margins; the line names are body text.
     const line = labelSize.height || 18;
     const nameLine = line * metrics.body / Math.max(1, metrics.caption);
-    // «Підписи ліній → Без підписів»: the plot takes the whole width; the table can carry the colours.
+    // “Line labels → No labels”: the plot takes the whole width; the table can carry the colours.
     const named = widget.props.labels !== "none";
     const axis = line * 2.6, labels = named ? Math.min(size.width * 0.32, nameLine * 8) : line * 0.4;
     const box = {left: axis, top: line * 0.6, width: Math.max(10, size.width - axis - labels - line * 0.6), height: Math.max(10, size.height - line * 2.2)};
@@ -113,7 +113,7 @@ function LiveChart({widget, event, results, now, theme, sample, metrics, suffix}
         {caption !== null && <h2>{caption}</h2>}
         <div className="live-chart__plot" ref={ref}>
             <span className="live-chart__probe" ref={labelRef} aria-hidden="true">0</span>
-            {!hasData ? <EmptyState compact message={t("live.chart.empty")} /> : size.width > 0 && <>
+            {!hasData ? <EmptyState compact message={t(event.Participation === 1 ? "live.chart.empty" : "live.chart.emptyParticipants")} /> : size.width > 0 && <>
                 <svg width={size.width} height={size.height} role="img" aria-label={event.Participation === 1 ? t("live.chart.teamsAria") : t("live.chart.participantsAria")}>
                     {[0, 0.25, 0.5, 0.75, 1].map(step => <line key={step} className="live-chart__grid" x1={box.left} x2={box.left + box.width} y1={box.top + box.height * (1 - step)} y2={box.top + box.height * (1 - step)} />)}
                     {cutX !== null && <line className="live-chart__freeze" x1={cutX} x2={cutX} y1={box.top} y2={box.top + box.height} />}
@@ -143,7 +143,7 @@ export function liveLogoItems(props: LiveWidget["props"]): LiveLogoItem[] {
 }
 
 // Every logo sits in an equal-height box (contain-fit, at most 4:1). In
-// «Одноколірні» the logo is a CSS mask filled with the theme ink; the dark
+// “Single colour” the logo is a CSS mask filled with the theme ink; the dark
 // theme uses a logo's own dark file when it has one. A fixed block may wrap
 // into 2–3 rows (a sponsors' wall).
 function LiveLogos({widget, edit, sample, theme}: {widget: LiveWidget; edit: boolean; sample: boolean; theme: LiveLayout["theme"]}) {
@@ -180,7 +180,7 @@ function LiveTimer({widget, event, stages, now, results, note, metrics, named, e
     const state = liveTimerState(widget.props, event, stages, now, results?.Freeze.FrozenAt ?? null, named);
     const digits = liveTimerDigits(state, now, widget.props.showSeconds !== false, liveTimerDigitMode(widget.props.digits));
     const zero = liveTimerZero(state, widget.props.atZero, widget.props.zeroText);
-    // «На нулі → Сховати»: the block stays empty on the screen; the editor keeps a quiet hint.
+    // “At zero → Hide”: the block stays empty on the screen; the editor keeps a quiet hint.
     const hidden = digits === null && zero === null;
     const shown = digits ?? zero ?? (edit ? t("live.timer.hiddenAtZero") : "");
     const urgency = liveTimerUrgency(state, now, Number(widget.props.lastMinutes) || 0);
@@ -203,7 +203,7 @@ function LiveTimer({widget, event, stages, now, results, note, metrics, named, e
 function LiveTitle({widget, event, logo, stages, now, note, metrics}: {widget: LiveWidget; event: PublicEventInfo; logo: string | null; stages: LiveStage[]; now: number; note: LiveNote | null; metrics: LiveMetrics}) {
     const [ref, size] = useElementSize<HTMLDivElement>();
     const text = typeof widget.props.subtitle === "string" ? widget.props.subtitle.trim() : "";
-    // «Поточний етап»: the running stage (or the next one); the own text otherwise.
+    // “Current stage”: the running stage (or the next one); the own text otherwise.
     const subtitle = widget.props.subtitleStage === true ? liveStageSubtitle(stages, now) || text : text;
     // A logo that does not load (an unpublished event's logo on a screen with no session) leaves no empty tile.
     const [logoBroken, setLogoBroken] = useState(false);
@@ -220,13 +220,13 @@ function LiveTitle({widget, event, logo, stages, now, note, metrics}: {widget: L
 
 type LiveTeamRow = NonNullable<ManageResultsSnapshot["Scoreboard"]>[number];
 
-// «Колонки»: a wide table splits its page into two columns side by side.
-// «Прогрес»: what a table row adds to its name and points.
+// “Columns”: a wide table splits its page into two columns side by side.
+// “Progress”: what a table row adds to its name and points.
 export type LiveTableProgress = {
-    // The bar under the name («Під назвою») or a «1600/2100» cell with the bar
-    // in place of the points («У колонці балів»); null without «Смуги балів».
+    // The bar under the name (“Under the name”) or a «1600/2100» cell with the bar
+    // in place of the points (“In the points column”); null without “Points bars”.
     bars: "name" | "points" | null;
-    // The «Прапори» cell: solved of the published tasks; 0 hides it.
+    // The “Flags” cell: solved of the published tasks; 0 hides it.
     flagsTasks: number;
     initials: boolean;
 };
@@ -239,11 +239,11 @@ function progressShare(cells: number): number {
 function TableColumn({rows, pinned, width, rowHeight, metrics, rankChars, pointsChars, event, highlight, marker, images, legend, paint, barMax, progress}: {
     rows: LiveTeamRow[]; pinned: number; width: number; rowHeight: number; metrics: LiveMetrics; rankChars: number; pointsChars: number; event: PublicEventInfo;
     highlight: LiveHighlight; marker: LiveMarker; images: string[] | null;
-    // «Легенда графіка»: the line colour of each team the chart draws.
+    // “Chart legend”: the line colour of each team the chart draws.
     legend: Map<string, string> | null;
     // The team colour of every team in the top 15 (the chart's colours), for the initials circles.
     paint: Map<string, string>;
-    // The points a full bar stands for; null without «Смуги балів».
+    // The points a full bar stands for; null without “Points bars”.
     barMax: number | null;
     progress: LiveTableProgress;
 }) {
@@ -300,7 +300,7 @@ function CountedPoints({points, max}: {points: number; max?: number}) {
 // The avatar before a name, in row-text sizes (its width and the gap after it).
 const avatarLead = 1.75;
 
-// «Прапори»: the count over a strip of the solved tasks, filled in order. The
+// “Flags”: the count over a strip of the solved tasks, filled in order. The
 // strip spans the cell in every mode, so the count ends where it ends.
 function LiveFlagsCell({solved, tasks, mode, square, font, pad}: {solved: number; tasks: number; mode: ReturnType<typeof liveFlagsMode>; square: number; font: number; pad: number}) {
     const done = Math.max(0, Math.min(tasks, solved));
@@ -316,12 +316,18 @@ function LiveFlagsCell({solved, tasks, mode, square, font, pad}: {solved: number
     </td>;
 }
 
-// The places a table shows: «Почати з місця 4» skips the podium, «Лише
-// перші N» stops after N places (no paging past them).
+// The places a table shows: “Start from place 4” skips the podium, “Top
+// N only” stops after N places (no paging past them).
 export function liveTableSource<T>(teams: T[], props: LiveWidget["props"]): {rows: T[]; offset: number} {
     const offset = Number(props.offset) === 3 ? 3 : 0;
     const limit = Math.max(0, Math.floor(Number(props.limit) || 0));
     return {rows: teams.slice(offset, limit ? offset + limit : undefined), offset};
+}
+
+// The table is empty when the board has no visible teams, or when it starts after the podium and every team stands there.
+function liveTableEmptyKey(teamEvent: boolean, onPodium: boolean): string {
+    if (onPodium) return teamEvent ? "live.table.emptyAfterPodium" : "live.table.emptyAfterPodiumParticipants";
+    return teamEvent ? "live.table.empty" : "live.table.emptyParticipants";
 }
 
 function LiveTable({widget, event, results, now, metrics, edit, suffix, legend, paint}: {widget: LiveWidget; event: PublicEventInfo; results?: ManageResultsSnapshot; now: number; metrics: LiveMetrics; edit: boolean; suffix: string; legend: Map<string, string> | null; paint: Map<string, string>}) {
@@ -352,7 +358,7 @@ function LiveTable({widget, event, results, now, metrics, edit, suffix, legend, 
         flagsTasks: widget.props.showFlags === true ? Math.max(0, results?.Tasks ?? 0) : 0,
         initials: widget.props.showInitials === true,
     };
-    return <LiveList caption={caption} rows={pageSize} header metrics={metrics} empty={source.length ? null : t("live.table.empty")} progress={paged && !edit ? {page, seconds: pageSeconds, elapsed} : null}>
+    return <LiveList caption={caption} rows={pageSize} header metrics={metrics} empty={source.length ? null : t(liveTableEmptyKey(event.Participation === 1, teams.length > 0))} progress={paged && !edit ? {page, seconds: pageSeconds, elapsed} : null}>
         {(geometry, width) => {
             const gap = columns > 1 ? metrics.body * 1.2 : 0;
             const columnWidth = (width - gap * (columns - 1)) / columns;
@@ -364,7 +370,7 @@ function LiveTable({widget, event, results, now, metrics, edit, suffix, legend, 
     </LiveList>;
 }
 
-// «Останні розв'язання», or in «Перші розв'язання» only the first solve of
+// “Latest solves”, or in “First solves” only the first solve of
 // each task (first blood), newest first.
 export function liveSolveItems(timeline: ManageResultsSnapshot["Timeline"], mode: unknown, rows: number): ManageResultsSnapshot["Timeline"] {
     const sorted = [...timeline].sort((a, b) => a.SolvedAt.localeCompare(b.SolvedAt));
@@ -436,7 +442,7 @@ function WidgetContent({widget, event, stages, results, now, theme, edit, sample
     return null;
 }
 
-// «Оголошення»: the text fills its block, on one line or two.
+// “Announcement”: the text fills its block, on one line or two.
 function LiveAnnouncement({widget, metrics}: {widget: LiveWidget; metrics: LiveMetrics}) {
     const [ref, size] = useElementSize<HTMLDivElement>();
     const text = typeof widget.props.text === "string" && widget.props.text.trim() || t("live.announcement.placeholder");
@@ -449,7 +455,7 @@ function LiveAnnouncement({widget, metrics}: {widget: LiveWidget; metrics: LiveM
 export type LiveGhost = {x: number; y: number; w: number; h: number; ok: boolean};
 
 // Text sizes of one block: the canvas size, the screen text scale and the
-// block's own «Розмір тексту».
+// block's own “Text size”.
 function blockMetrics(height: number, width: number, textScale: number, profile: LiveTextProfile): LiveMetrics {
     const size = (role: "caption" | "body" | "display") => liveTextSize(role, height, textScale, width || undefined, profile).effective;
     return {caption: size("caption"), body: size("body"), display: size("display"), timer: liveTextFloors[profile].timer};
@@ -497,7 +503,7 @@ export function LiveCanvas({layout, event, stages = noStages, results, offlineSi
     } as CSSProperties), [layout.grid.cols, layout.grid.rows, layout.screen.textScale, layout.theme, event.Theme.Brand, profile]);
     // Light theme: row 1 is the brand band; one-row widgets there sit on it,
     // taller ones cover it with the page colour.
-    // A block's own colours («Кольори»): a fill class and the colour variables.
+    // A block's own colours (“Colours”): a fill class and the colour variables.
     const colors = useMemo(() => new Map(layout.widgets.map(widget => [widget.id, liveBlockColors(widget, event.Theme, layout.theme)])), [layout.widgets, layout.theme, event.Theme]);
     const place = (widget: LiveWidget) => {
         const own = colors.get(widget.id)?.className;

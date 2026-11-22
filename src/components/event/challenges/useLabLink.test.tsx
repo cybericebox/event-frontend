@@ -31,31 +31,85 @@ const flush = () => act(async () => { await Promise.resolve(); await Promise.res
 type FakeTab = {location: {href: string}; close: ReturnType<typeof vi.fn>; opener: unknown};
 let tab: FakeTab;
 let windowOpen: ReturnType<typeof vi.fn>;
+// Every form the page submits, read at submit time (the form is removed right after).
+type Submitted = {method: string; action: string; target: string; fields: Record<string, string>; inDocument: boolean};
+let submitted: Submitted[];
 
 beforeEach(() => {
     tab = {location: {href: "about:blank"}, close: vi.fn(), opener: "self"};
     windowOpen = vi.fn(() => tab);
     vi.stubGlobal("open", windowOpen);
-    openLink.mockResolvedValue({url: "https://web-abc123.labs.test/_auth?t=x", expiresAt: 0});
+    submitted = [];
+    vi.spyOn(HTMLFormElement.prototype, "submit").mockImplementation(function (this: HTMLFormElement) {
+        submitted.push({method: this.method, action: this.action, target: this.target, inDocument: this.isConnected,
+            fields: Object.fromEntries([...new FormData(this).entries()].map(([name, value]) => [name, String(value)]))});
+    });
+    openLink.mockResolvedValue({url: "https://web-abc123.labs.test/_auth", grant: "g", expiresAt: 0});
 });
-afterEach(() => { cleanup(); client.clear(); vi.unstubAllGlobals(); openLink.mockReset(); });
+afterEach(() => { cleanup(); client.clear(); vi.unstubAllGlobals(); vi.restoreAllMocks(); openLink.mockReset(); });
 
 describe("useLabLink", () => {
-    it("opens the tab synchronously in the click, then points it at the fresh link", async () => {
+    it("opens the tab synchronously in the click, then posts the fresh grant into it", async () => {
         let resolve: (value: unknown) => void = () => {};
         openLink.mockReturnValue(new Promise(r => { resolve = r; }));
         renderProbe(<Probe />);
         fireEvent.click(screen.getByText("open"));
         // The tab exists before the request answers, so the browser allows it.
-        expect(windowOpen).toHaveBeenCalledWith("about:blank", "_blank");
+        expect(windowOpen).toHaveBeenCalledWith("about:blank", expect.stringMatching(/^cib-lab-./));
+        expect(submitted).toHaveLength(0);
         expect(tab.opener).toBeNull();
         expect(tab.location.href).toBe("about:blank");
         expect(screen.getByRole("status").textContent).toBe("pending|web:80");
-        await act(async () => { resolve({url: "https://web-abc123.labs.test/_auth?t=x", expiresAt: 0}); await Promise.resolve(); });
+        const name = windowOpen.mock.calls[0][1];
+        await act(async () => { resolve({url: "https://web-abc123.labs.test/_auth", grant: "g", expiresAt: 0}); await Promise.resolve(); });
         await flush();
-        expect(tab.location.href).toBe("https://web-abc123.labs.test/_auth?t=x");
+        // The grant goes in a post body into the named tab; the tab itself is never navigated to a link.
+        expect(submitted).toEqual([{method: "post", action: "https://web-abc123.labs.test/_auth", target: name, inDocument: true, fields: {grant: "g", next: "/"}}]);
+        expect(tab.location.href).toBe("about:blank");
+        expect(document.querySelector("form")).toBeNull();
         expect(screen.getByRole("status").textContent).toBe("idle|");
         expect(openLink).toHaveBeenCalledWith("e", "c1", "web", 80, false);
+    });
+
+    it("uses a different tab name on every click", async () => {
+        renderProbe(<Probe />);
+        fireEvent.click(screen.getByText("open")); await flush();
+        fireEvent.click(screen.getByText("open")); await flush();
+        expect(submitted).toHaveLength(2);
+        expect(submitted[0].target).not.toBe(submitted[1].target);
+        expect(windowOpen.mock.calls.map(call => call[1])).toEqual(submitted.map(form => form.target));
+    });
+
+    it("keeps the grant out of every URL, the tab location and the form action", async () => {
+        openLink.mockResolvedValue({url: "https://web-abc123.labs.test/_auth", grant: "secret.jws.value", expiresAt: 0});
+        renderProbe(<Probe destinationURL="https://web-abc123.labs.test/panel?x=1" />);
+        fireEvent.click(screen.getByText("open")); await flush();
+        expect(submitted).toHaveLength(1);
+        expect(submitted[0].fields.grant).toBe("secret.jws.value");
+        expect(submitted[0].action).not.toContain("secret");
+        expect(submitted[0].action).not.toContain("?");
+        expect(tab.location.href).toBe("about:blank");
+        expect(windowOpen.mock.calls.every(call => !String(call[0]).includes("secret") && !String(call[1]).includes("secret"))).toBe(true);
+    });
+
+    it("closes the tab and posts nothing when the answer carries no grant", async () => {
+        openLink.mockResolvedValue({url: "https://web-abc123.labs.test/_auth", grant: "", expiresAt: 0});
+        renderProbe(<Probe />);
+        fireEvent.click(screen.getByText("open")); await flush();
+        expect(submitted).toHaveLength(0);
+        expect(tab.close).toHaveBeenCalled();
+        expect(screen.getByRole("status").textContent).toBe("error|");
+    });
+
+    it("closes the tab and posts nothing when the endpoint is not https with exactly the path /_auth", async () => {
+        for (const url of ["https://web-abc123.labs.test/_auth?grant=x", "https://web-abc123.labs.test/_auth#x", "https://web-abc123.labs.test/other", "https://web-abc123.labs.test/", "http://web-abc123.labs.test/_auth", "javascript:alert(1)", "https://u:p@web-abc123.labs.test/_auth"]) {
+            openLink.mockResolvedValue({url, grant: "g", expiresAt: 0});
+            renderProbe(<Probe />);
+            fireEvent.click(screen.getByText("open")); await flush();
+            cleanup();
+        }
+        expect(submitted).toHaveLength(0);
+        expect(tab.close).toHaveBeenCalledTimes(7);
     });
 
     it("fetches a new link on every click and keeps none", async () => {
@@ -78,7 +132,7 @@ describe("useLabLink", () => {
         fireEvent.click(screen.getByText("retry"));
         await flush();
         expect(openLink).toHaveBeenCalledTimes(2);
-        expect(tab.location.href).toBe("https://web-abc123.labs.test/_auth?t=x");
+        expect(submitted).toHaveLength(1);
     });
 
     it("reports a blocked popup without asking the server", async () => {
@@ -120,7 +174,7 @@ describe("late lab link fences", () => {
         fireEvent.click(screen.getByText("open"));
         view.rerender(<Probe {...next} />);
         expect(tab.close).toHaveBeenCalled();
-        await act(async () => {resolve({url: "https://old.test", expiresAt: 0, labID: runningLab.ID, revision: runningLab.Revision});});
+        await act(async () => {resolve({url: "https://old.test/_auth", grant: "g", expiresAt: 0, labID: runningLab.ID, revision: runningLab.Revision});});
         expect(tab.location.href).toBe("about:blank");
         fireEvent.click(screen.getByText("retry"));
         expect(openLink).toHaveBeenCalledTimes(1);
@@ -131,33 +185,33 @@ describe("late lab link fences", () => {
         expect(windowOpen).not.toHaveBeenCalled();
     });
     it.each([{labID: runningLab.ID, revision: "1"}, {labID: null, revision: null}, {labID: "other", revision: runningLab.Revision}])("rejects a reply without the requested generation %j", async fields => {
-        openLink.mockResolvedValue({url: "https://old.test", expiresAt: 0, ...fields});
+        openLink.mockResolvedValue({url: "https://old.test/_auth", grant: "g", expiresAt: 0, ...fields});
         renderProbe(<Probe lifecycle={runningLab} />);
         fireEvent.click(screen.getByText("open")); await flush();
         expect(tab.location.href).toBe("about:blank"); expect(tab.close).toHaveBeenCalled();
     });
     it("navigates a matching current generation", async () => {
-        openLink.mockResolvedValue({url: "https://fresh.test", expiresAt: 0, labID: runningLab.ID, revision: runningLab.Revision});
+        openLink.mockResolvedValue({url: "https://fresh.test/_auth", grant: "g", expiresAt: 0, labID: runningLab.ID, revision: runningLab.Revision});
         renderProbe(<Probe lifecycle={runningLab} />); fireEvent.click(screen.getByText("open")); await flush();
-        expect(tab.location.href).toBe("https://fresh.test");
+        expect(submitted).toHaveLength(1); expect(submitted[0].action).toBe("https://fresh.test/_auth"); expect(tab.close).not.toHaveBeenCalled();
     });
     it("closes legacy requests when lifecycle appears", async () => {
         let resolve!: (v: unknown) => void; openLink.mockReturnValue(new Promise(r => {resolve = r;}));
         const view = renderProbe(<Probe />); fireEvent.click(screen.getByText("open")); view.rerender(<Probe lifecycle={runningLab} />);
-        await act(async () => {resolve({url: "https://old.test", expiresAt: 0});});
+        await act(async () => {resolve({url: "https://old.test/_auth", grant: "g", expiresAt: 0});});
         expect(tab.location.href).toBe("about:blank"); expect(tab.close).toHaveBeenCalled();
     });
     it("closes pending windows on unmount", async () => {
         let resolve!: (v: unknown) => void; openLink.mockReturnValue(new Promise(r => {resolve = r;}));
         const view = renderProbe(<Probe lifecycle={runningLab} />); fireEvent.click(screen.getByText("open")); view.unmount();
-        expect(tab.close).toHaveBeenCalled(); await act(async () => {resolve({url: "https://old.test", expiresAt: 0, labID: runningLab.ID, revision: runningLab.Revision});});
+        expect(tab.close).toHaveBeenCalled(); await act(async () => {resolve({url: "https://old.test/_auth", grant: "g", expiresAt: 0, labID: runningLab.ID, revision: runningLab.Revision});});
         expect(tab.location.href).toBe("about:blank");
     });
     it("closes pending windows on session cache removal", async () => {
         client.setQueryData(["event-lab-lifecycle", "participant", "e", runningLab.ID], runningLab);
         let resolve!: (v: unknown) => void; openLink.mockReturnValue(new Promise(r => {resolve = r;}));
         renderProbe(<Probe lifecycle={runningLab} />); fireEvent.click(screen.getByText("open")); await act(async () => {client.clear();});
-        expect(tab.close).toHaveBeenCalled(); await act(async () => {resolve({url: "https://old.test", expiresAt: 0, labID: runningLab.ID, revision: runningLab.Revision});});
+        expect(tab.close).toHaveBeenCalled(); await act(async () => {resolve({url: "https://old.test/_auth", grant: "g", expiresAt: 0, labID: runningLab.ID, revision: runningLab.Revision});});
         expect(tab.location.href).toBe("about:blank"); fireEvent.click(screen.getByText("retry")); expect(openLink).toHaveBeenCalledTimes(1);
     });
 });
@@ -166,7 +220,7 @@ it("fences a shared cache closure before React can render the new lifecycle", as
     const key = ["event-lab-lifecycle", "participant", "e", runningLab.ID]; client.setQueryData(key, runningLab);
     let resolve!: (v: unknown) => void; openLink.mockReturnValue(new Promise(r => {resolve = r;}));
     renderProbe(<Probe lifecycle={runningLab} />); fireEvent.click(screen.getByText("open"));
-    await act(async () => {client.setQueryData(key, completedLab); resolve({url: "https://old.test", expiresAt: 0, labID: runningLab.ID, revision: runningLab.Revision});});
+    await act(async () => {client.setQueryData(key, completedLab); resolve({url: "https://old.test/_auth", grant: "g", expiresAt: 0, labID: runningLab.ID, revision: runningLab.Revision});});
     expect(tab.location.href).toBe("about:blank"); expect(tab.close).toHaveBeenCalled();
     fireEvent.click(screen.getByText("retry")); expect(openLink).toHaveBeenCalledTimes(1);
 });
@@ -186,7 +240,7 @@ it("closes a legacy blank tab when the same task runtime first publishes Lab bef
     client.setQueryData(key, {Lab: null});
     let resolve!: (v: unknown) => void; openLink.mockReturnValue(new Promise(r => {resolve = r;}));
     renderProbe(<Probe />); fireEvent.click(screen.getByText("open"));
-    await act(async () => {client.setQueryData(key, {Lab: runningLab}); resolve({url: "https://old.test", expiresAt: 0, labID: null, revision: null});});
+    await act(async () => {client.setQueryData(key, {Lab: runningLab}); resolve({url: "https://old.test/_auth", grant: "g", expiresAt: 0, labID: null, revision: null});});
     expect(tab.location.href).toBe("about:blank"); expect(tab.close).toHaveBeenCalled();
     fireEvent.click(screen.getByText("retry")); expect(openLink).toHaveBeenCalledTimes(1);
 });
@@ -223,7 +277,7 @@ it.each([false, true])("board publication of canonical B fences A before observe
         client.setQueryData(["event-lab-lifecycle", mode, "e", closed.ID], closed);
         client.setQueryData(boardKey, boardValue(closed, moderators));
         expect(tab.close).toHaveBeenCalled();
-        resolve({url: "https://old.test", expiresAt: 0, labID: runningLab.ID, revision: runningLab.Revision});
+        resolve({url: "https://old.test/_auth", grant: "g", expiresAt: 0, labID: runningLab.ID, revision: runningLab.Revision});
     });
     expect(tab.location.href).toBe("about:blank"); fireEvent.click(screen.getByText("retry")); expect(openLink).toHaveBeenCalledTimes(1);
 });
@@ -233,7 +287,7 @@ it.each([false, true])("first canonical board Lab fences a pending legacy link (
     client.setQueryData(["event-challenge-lab", mode, "e", fixtureChallenge.EventChallengeID], {...runtimeFixture, Lab: null});
     let resolve!: (v: unknown) => void; openLink.mockReturnValue(new Promise(r => {resolve = r;}));
     renderProbe(<BoardProbe moderators={moderators} />); fireEvent.click(screen.getByText("open"));
-    await act(async () => {client.setQueryData(boardKey, boardValue(replacementLab, moderators)); resolve({url: "https://legacy.test", expiresAt: 0, labID: null, revision: null});});
+    await act(async () => {client.setQueryData(boardKey, boardValue(replacementLab, moderators)); resolve({url: "https://legacy.test/_auth", grant: "g", expiresAt: 0, labID: null, revision: null});});
     expect(tab.location.href).toBe("about:blank"); expect(tab.close).toHaveBeenCalled(); fireEvent.click(screen.getByText("retry")); expect(openLink).toHaveBeenCalledTimes(1);
 });
 
@@ -243,7 +297,7 @@ it("a current board without the active task cannot authorize the old pending acc
     client.setQueryData(["event-challenge-lab", "participant", "e", fixtureChallenge.EventChallengeID], runtimeFixture);
     let resolve!: (v: unknown) => void; openLink.mockReturnValue(new Promise(r => {resolve = r;}));
     renderProbe(<BoardProbe moderators={false} />); fireEvent.click(screen.getByText("open"));
-    await act(async () => {client.setQueryData(key, ownBoardSchema.parse({ServerNow: "2026-10-08T12:00:00Z", Challenges: []})); resolve({url: "https://old.test", expiresAt: 0, labID: runningLab.ID, revision: runningLab.Revision});});
+    await act(async () => {client.setQueryData(key, ownBoardSchema.parse({ServerNow: "2026-10-08T12:00:00Z", Challenges: []})); resolve({url: "https://old.test/_auth", grant: "g", expiresAt: 0, labID: runningLab.ID, revision: runningLab.Revision});});
     expect(tab.location.href).toBe("about:blank"); expect(tab.close).toHaveBeenCalled();
 });
 
@@ -261,7 +315,7 @@ it("fences a pending ready Lab link synchronously when its returnable stage clos
     await act(async () => {
         client.setQueryData(["event-own-challenges", "e"], {...board, Stages: [{...stage, State: "closed"}]});
         expect(tab.close).toHaveBeenCalled();
-        resolve({url: "https://old-stage.test", expiresAt: 0, labID: runningLab.ID, revision: runningLab.Revision});
+        resolve({url: "https://old-stage.test/_auth", grant: "g", expiresAt: 0, labID: runningLab.ID, revision: runningLab.Revision});
     });
     expect(tab.location.href).toBe("about:blank");
     fireEvent.click(screen.getByText("retry")); expect(openLink).toHaveBeenCalledTimes(1);
@@ -282,13 +336,15 @@ it.each([false, true])("a known terminal pin fences links after an identityless 
     ui.unmount();
 });
 
-it("preserves composed path, query and fragment through the actual fresh auth URL", async () => {
+it("posts the composed path, query and fragment as the next field, never in the endpoint URL", async () => {
     renderProbe(<Probe destinationURL="https://web-abc123.labs.test/panel?x=1&y=2#section" />);
     fireEvent.click(screen.getByText("open"));await flush();
-    const url=new URL(tab.location.href);
-    expect(url.origin).toBe("https://web-abc123.labs.test");expect(url.pathname).toBe("/_auth");expect(url.searchParams.get("t")).toBe("x");expect(url.searchParams.get("next")).toBe("/panel?x=1&y=2#section");
+    expect(submitted).toHaveLength(1);
+    const url=new URL(submitted[0].action);
+    expect(url.origin).toBe("https://web-abc123.labs.test");expect(url.pathname).toBe("/_auth");expect(url.search).toBe("");expect(url.hash).toBe("");
+    expect(submitted[0].fields).toEqual({grant: "g", next: "/panel?x=1&y=2#section"});
 });
 it("refuses a changed proxy origin instead of silently opening the wrong target", async () => {
     renderProbe(<Probe destinationURL="https://other.test/panel"/>);fireEvent.click(screen.getByText("open"));await flush();
-    expect(tab.close).toHaveBeenCalled();expect(tab.location.href).toBe("about:blank");expect(screen.getByRole("status").textContent).toBe("error|");
+    expect(tab.close).toHaveBeenCalled();expect(submitted).toHaveLength(0);expect(screen.getByRole("status").textContent).toBe("error|");
 });

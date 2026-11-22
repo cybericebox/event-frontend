@@ -46,7 +46,7 @@ describe("the subtask count", () => {
 });
 
 describe("the scoring badge", () => {
-    it("reads «Як у заходу» and opens the event's dynamic range and decay", () => {
+    it("reads 'Same as the event' and opens the event's dynamic range and decay", () => {
         const tasks = [task("A"), task("B")];
         expect(scoringBadge(tasks, scoring())).toBe("Як у заходу");
         render(<ScoringPopover tasks={tasks} scoring={scoring()} />);

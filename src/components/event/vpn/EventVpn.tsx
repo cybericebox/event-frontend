@@ -104,6 +104,12 @@ function VpnModal({eventID, eventTag, moderators, vpnReady, connected, open, onC
     </DialogModal>;
 }
 
+// Until the peer is connected the status is polled every 5 s, so «connected» shows soon after the first handshake;
+// once connected (or while the check fails) every 30 s is enough.
+export function vpnStatusInterval(query: {state: {data?: {Connected?: boolean | null}; status: string}}): number {
+    return query.state.status !== "error" && query.state.data?.Connected !== true ? 5000 : 30000;
+}
+
 // VPN is shown only when the event has infrastructure tasks; it never blocks anything.
 export function EventVpnProvider({eventID, eventTag, enabled, moderators = false, children}: {eventID: string; eventTag: string; enabled: boolean; moderators?: boolean; children: ReactNode}) {
     const [open, setOpen] = useState(false);
@@ -116,7 +122,7 @@ export function EventVpnProvider({eventID, eventTag, enabled, moderators = false
     const labs = useQuery({queryKey: ["event-management-labs", eventID], queryFn: () => getManageLabs(eventID), enabled: enabled && !preview.active && moderators, retry: false, refetchInterval: 30000, refetchOnWindowFocus: false});
     const status: StandStatus | null = preview.active ? !selectionID ? "not_deployed" : previewRuntime.data?.Ready ? "ready" : previewRuntime.isError || previewRuntime.data?.Phase === "failed" ? "failed" : "creating" : moderators ? labs.data?.Items.find(item => item.Moderators)?.Status ?? null : own.data?.Status ?? null;
     const ready = preview.active ? previewRuntime.data?.Ready === true && !previewRuntime.data.Expired && !previewRuntime.data.Removing : moderators ? labs.data?.ModeratorVPNReady === true : own.data?.VPNReady === true;
-    const connection = useQuery({queryKey: ["event-vpn-status", eventID, moderators], queryFn: () => moderators ? getModeratorVPNStatus(eventID) : getVPNStatus(eventID), enabled: enabled && !preview.active && ready, retry: false, refetchInterval: 30000, refetchOnWindowFocus: true});
+    const connection = useQuery({queryKey: ["event-vpn-status", eventID, moderators], queryFn: () => moderators ? getModeratorVPNStatus(eventID) : getVPNStatus(eventID), enabled: enabled && !preview.active && ready, retry: false, refetchInterval: vpnStatusInterval, refetchOnWindowFocus: true});
     const connected = preview.active ? ready ? previewRuntime.data?.VPNConnected ?? null : null : ready && !connection.isError ? connection.data?.Connected ?? null : null;
     const checkFailed = !preview.active && (moderators ? labs.isError && !labs.data : own.isError && !own.data);
     const value = useMemo(() => ({available, status, ready, connected, checkFailed, openVpn: () => setOpen(true)}), [available, status, ready, connected, checkFailed]);

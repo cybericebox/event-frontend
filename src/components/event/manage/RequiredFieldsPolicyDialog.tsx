@@ -9,7 +9,7 @@ import type {FieldsScope} from "./FormBlockCard";
 import {newRegistrationsOnly, type PolicyChoice} from "./requiredFieldsPolicy";
 
 // Asked when a save adds a required field (or makes one required) while
-// answers already exist: «Лише для нових реєстрацій» is the default. Mount it
+// answers already exist: “For new registrations only” is the default. Mount it
 // with a fresh key each time it opens so the choice starts from the default.
 export function RequiredFieldsPolicyDialog({scope, fields, answered, busy, onCancel, onConfirm}: {
     scope: FieldsScope;

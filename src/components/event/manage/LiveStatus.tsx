@@ -10,11 +10,11 @@ import "./liveStatus.css";
 
 // How a page keeps its data fresh, shown at the top right of the page header.
 // One wording system for every page:
-//   «Наживо»           a live stream that confirmed itself recently;
-//   «Перепідключення…» the stream is silent or reconnecting;
-//   «Автооновлення»    the page polls (no stream, or the stream's fallback);
-//   «Не підключено»    polling fails too;
-//   manual             «Оновлено …» plus a refresh button.
+//   “Live”           a live stream that confirmed itself recently;
+//   “Reconnecting” the stream is silent or reconnecting;
+//   “Auto-refresh”    the page polls (no stream, or the stream's fallback);
+//   “Not connected”    polling fails too;
+//   manual             “Updated …” plus a refresh button.
 export type DataFreshness =
     | {kind: "stream"; mode: StreamMode; pollSeconds: number; failing?: boolean}
     | {kind: "polling"; seconds: number; failing?: boolean}
@@ -25,7 +25,7 @@ type Shown = "live" | "reconnecting" | "polling" | "offline" | "manual";
 const clock = new Intl.DateTimeFormat("uk-UA", {hour: "2-digit", minute: "2-digit", second: "2-digit"});
 
 // What to show now. A stream whose last confirmation (updatedAt) is older
-// than staleStreamMs is never shown as «Наживо».
+// than staleStreamMs is never shown as “Live”.
 export function shownFreshness(freshness: DataFreshness, updatedAt: number, now: number): Shown {
     if (freshness.kind === "manual") return "manual";
     if (freshness.kind === "polling") return freshness.failing ? "offline" : "polling";

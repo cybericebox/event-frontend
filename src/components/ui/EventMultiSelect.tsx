@@ -9,7 +9,7 @@ import {t} from "@/i18n/t";
 export type MultiOption = {value: string; label: string; hint?: string};
 
 // A select with several choices, in the look of EventSelect: the trigger says
-// what is chosen («Складність: Легка, Середня», or the empty label), the menu
+// what is chosen (“Difficulty: Easy, Medium”, or the empty label), the menu
 // lists the options with checks and stays open while picking. With `onSearch`
 // the menu starts with a search field (long lists, server suggestions);
 // `state` fills the list area while the options load or fail.

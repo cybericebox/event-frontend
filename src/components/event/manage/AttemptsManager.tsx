@@ -46,7 +46,7 @@ function ResultTag({attempt}: {attempt: ManageAttempt}) {
     return <span className={`ib-tag ib-tag--sm ${attempt.Correct ? "ib-tag--ok" : "ib-tag--danger"}`}>{attemptStatus(attempt)}</span>;
 }
 
-// «Журнал спроб»: solution attempts and opened hints, one view at a time.
+// “Attempts log”: solution attempts and opened hints, one view at a time.
 export function AttemptsManager({initialView = "attempts", initialFilters = {}}: {initialView?: JournalView; initialFilters?: JournalFilterParams}) {
     const router = useRouter();
     const [view, setView] = useState<JournalView>(initialView);

@@ -21,7 +21,7 @@ function download(fileName: string, content: string) {
     URL.revokeObjectURL(url);
 }
 
-// CSV upload field: a (?) tooltip lists the columns, «Завантажити шаблон»
+// CSV upload field: a (?) tooltip lists the columns, “Download template”
 // downloads a template, and the parse issues are listed with file rows.
 export function CsvField({label, columns, required, header = columns, fieldLines = [], examples, templateName, fileName, onFile, issues, serverIssues = [], disabled = false, templateDisabled = false, pickerRef}: {
     label: string;

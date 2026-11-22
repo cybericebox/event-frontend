@@ -2,7 +2,7 @@
 
 import {useEffect, useRef, useState} from "react";
 
-// A projector screen has nobody to press «Спробувати ще раз»: a failed load
+// A projector screen has nobody to press “Try again”: a failed load
 // is retried by itself, after 5, 10, then every 30 seconds, without end.
 export const liveRetrySteps = [5, 10, 30] as const;
 

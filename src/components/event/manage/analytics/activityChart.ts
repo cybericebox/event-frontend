@@ -23,7 +23,7 @@ export type ActivitySeries = {
 };
 
 // The whole-event activity: solves and wrong attempts per bucket, with start /
-// freeze / finish (and «зараз», when `now` is given) marked. Attempts, correct
+// freeze / finish (and “now”, when `now` is given) marked. Attempts, correct
 // answers and task opens start hidden in the legend. A long event is merged
 // into wider buckets (see activityBucketMinutes).
 export const activityBucketMinutes = (overview: AnalyticsOverview) => bucketSeries(overview.Series).minutes;

@@ -52,10 +52,10 @@ function doneText(result: BatchTeamsResult, sendEmails: boolean): string {
     return t("manage.teams.batch.done", {teams: result.Teams.length, assigned: result.Assigned, invited: result.Invited});
 }
 
-// «Створити команду»: one team by hand (members as chips, existing
+// “Create team”: one team by hand (members as chips, existing
 // participants can be picked) or many from a CSV (team, email, first_name,
 // last_name, captain). Members join at once; people who are not participants
-// yet are invited and stay «очікує підтвердження» until they accept.
+// yet are invited and stay “awaiting confirmation” until they accept.
 export function CreateTeamDialog({eventID, open, onOpenChange, onCreated}: {
     eventID: string;
     open: boolean;

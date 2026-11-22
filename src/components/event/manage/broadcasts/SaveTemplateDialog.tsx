@@ -20,7 +20,7 @@ export function templateSaveError(error: unknown): {name?: string; form?: string
     return {form: apiErrorMessage(code, t("manage.customTemplates.error.save"))};
 }
 
-// «Зберегти як шаблон» in the composer: asks for a name and stores the message (not the audience) as a template.
+// “Save as template” in the composer: asks for a name and stores the message (not the audience) as a template.
 export function SaveTemplateDialog({open, eventID, message, onClose}: {open: boolean; eventID: string; message: BroadcastMessage; onClose: () => void}) {
     const queryClient = useQueryClient();
     const [name, setName] = useState("");

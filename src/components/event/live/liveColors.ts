@@ -3,7 +3,7 @@ import type {LiveLayout, LiveWidget} from "@/api/manageLive";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {colorContrast} from "@/components/event/manage/deriveTheme";
 
-// Own colours of a block («Кольори»): every block keeps the screen theme
+// Own colours of a block (“Colours”): every block keeps the screen theme
 // (the event brand and accent) until it gets a fill, a text colour or an
 // accent of its own. The text on a fill picks white or ink by contrast, so a
 // fill never leaves unreadable text behind.
@@ -14,7 +14,7 @@ export type LiveFill = typeof liveFills[number];
 export const liveHighlights = ["none", "accent", "medals"] as const;
 export type LiveHighlight = typeof liveHighlights[number];
 
-// «Позначка місць» of places 1–3 in a table, podium or leader cards.
+// “Place marks” of places 1–3 in a table, podium or leader cards.
 export const liveMarkers = ["numbers", "medals", "medal-icons", "cups", "images"] as const;
 export type LiveMarker = typeof liveMarkers[number];
 
@@ -50,7 +50,7 @@ export function liveMarkerOf(widget: LiveWidget): LiveMarker {
     return (liveMarkers as readonly unknown[]).includes(value) ? value as LiveMarker : liveHighlightOf(widget) === "medals" ? "medals" : "numbers";
 }
 
-// The organizer's three pictures of «Свої зображення», or null when not all three are set.
+// The organizer's three pictures of “Own pictures”, or null when not all three are set.
 export function livePlaceImages(widget: LiveWidget): string[] | null {
     const value = widget.props.placeImages;
     return Array.isArray(value) && value.length === 3 && value.every(item => typeof item === "string" && item) ? value as string[] : null;
@@ -104,7 +104,7 @@ export function liveBlockColors(widget: LiveWidget, theme: Theme, mode: LiveLayo
     const shownAccent = ownAccent ?? (background ? themeAccent(theme, mode) : null);
     const accent = ownAccent ?? (fill === "accent" || (background && shownAccent && (colorContrast(shownAccent, background) ?? 21) < liveAccentContrastMin) ? ink : shownAccent);
     if (ownAccent || (accent && accent !== themeAccent(theme, mode))) style["--live-accent"] = accent!;
-    // «Колір останніх хвилин»: the timer's own tile colour for the last minutes, apart from the accent.
+    // “Last minutes colour”: the timer's own tile colour for the last minutes, apart from the accent.
     const urgent = widget.type === "timer" ? liveHex(widget.props.urgentColor) : null;
     if (urgent) {
         style["--live-urgent"] = urgent;

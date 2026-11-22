@@ -1,4 +1,4 @@
-/* «Етапи» on the schedule page: one bordered card per stage, no shadows. */
+/* “Stages” on the schedule page: one bordered card per stage, no shadows. */
 .event-stage-list{display:grid;gap:var(--ib-3);margin:0;padding:0;list-style:none}
 .event-stage{display:grid;gap:var(--ib-3);padding:var(--ib-4);border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-surface)}
 .event-stage.is-closed{background:var(--ib-solved)}

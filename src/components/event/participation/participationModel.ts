@@ -82,7 +82,7 @@ export function forgetJoinCode(): void {
 
 const expiresFormat = new Intl.DateTimeFormat("uk-UA", {dateStyle: "medium", timeStyle: "short"});
 
-// «діє до …» for a link with an expiry, the no-limit line otherwise; an expired link says so.
+// “Valid until” for a link with an expiry, the no-limit line otherwise; an expired link says so.
 export function joinLinkValidity(expiresAt: string | null, now: number): {text: string; expired: boolean} {
     if (!expiresAt) return {text: t("participation.team.link.noExpiry"), expired: false};
     const at = Date.parse(expiresAt);
@@ -93,7 +93,7 @@ export function joinLinkValidity(expiresAt: string | null, now: number): {text: 
 
 export type ParticipationTab = "profile" | "team";
 
-// «Команда» exists only in team mode; an unknown or foreign tab opens the profile.
+// “Team” exists only in team mode; an unknown or foreign tab opens the profile.
 export function participationTabFromParam(tab: string | null | undefined, teamMode: boolean): ParticipationTab | null {
     if (tab === "profile") return "profile";
     return tab === "team" && teamMode ? "team" : null;

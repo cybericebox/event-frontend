@@ -71,6 +71,6 @@ export async function getPreviewLab(eventID: string, selectionID: string) {
 }
 export const getPreviewVPNConfig = async (eventID: string, selectionID: string) => (await request(eventID, `${selectionPath(selectionID)}/vpn`, z.object({Config: z.string()}))).Config;
 export async function openPreviewLabLink(eventID: string, selectionID: string, Device: string, Port: number) {
-    const result = await request(eventID, `${selectionPath(selectionID)}/proxy`, z.object({URL: z.string(), ExpiresAt: z.string()}), "POST", {Device, Port});
-    return {url: result.URL, expiresAt: Date.parse(result.ExpiresAt), labID: null, revision: null};
+    const result = await request(eventID, `${selectionPath(selectionID)}/proxy`, z.object({URL: z.string().refine(value => !/[?#]/.test(value)), Grant: z.string().min(1), ExpiresAt: z.string()}), "POST", {Device, Port});
+    return {url: result.URL, grant: result.Grant, expiresAt: Date.parse(result.ExpiresAt), labID: null, revision: null};
 }

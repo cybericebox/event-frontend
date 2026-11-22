@@ -53,6 +53,15 @@ async function openInbox() {
 }
 
 describe("inbox", () => {
+    it("the «other events» link carries the cfg-main-only class (hidden without a main site) and the href it is given", async () => {
+        api.getInboxSince.mockResolvedValue({...poll, OtherEventsCount: 3});
+        render(<InboxButton event={{id: "e1", otherEventsHref: "https://example.test/?inbox"}} />);
+        fireEvent.click(screen.getByRole("button", {name: /Вхідні/}));
+        const link = await screen.findByRole("link", {name: /інших заходах/});
+        expect(link.getAttribute("href")).toBe("https://example.test/?inbox");
+        expect(link.classList.contains("cfg-main-only")).toBe(true);
+    });
+
     it.each(["list", "pop-in"])("guards the %s navigation before marking the notification read", async mode => {
         const message = lab("a", {Link: "/manage/schedule", Actions: [{label: "notification action", href: "/manage/schedule"}]});
         api.getInbox.mockResolvedValue({Items: [message], NextCursor: null});
@@ -183,13 +192,13 @@ describe("inbox", () => {
         expect(within(plain).queryByRole("link")).toBeNull();
     });
 
-    it("marks unread rows with the word «Нове» and no dot", async () => {
+    it("marks unread rows with the word 'New' and no dot", async () => {
         await openInbox();
         expect(document.querySelector(".event-notification-card__unread")).toBeNull();
         expect(screen.getAllByText(t("inbox.unreadItem")).length).toBe(2);
     });
 
-    it("a read open request still says «Потребує дії», is not «Нове», and the bell says what it counts", async () => {
+    it("a read open request still says 'Needs action', is not 'New', and the bell says what it counts", async () => {
         const alarm = {...lab("alarm", {Type: "resources.alarm.raised", Resolvable: true, ReadAt: "2026-10-01T10:05:00Z"})};
         api.getInboxSince.mockResolvedValue({...poll, Unread: 0, Counts: {All: 1, Requests: 1, Personal: 0, Activity: 0}});
         api.getInbox.mockResolvedValue({Items: [alarm], NextCursor: null});

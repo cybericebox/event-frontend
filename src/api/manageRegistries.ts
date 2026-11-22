@@ -4,7 +4,7 @@ import {requireApiOrigin} from "@/utils/origins";
 import {t} from "@/i18n/t";
 import {formatDateTime} from "@/utils/dateTime";
 
-// «Реєстри образів» in «Панель заходу»: the registry credentials of one event
+// “Image registries” in “Event panel”: the registry credentials of one event
 // (used only for this event's labs) and which task images cannot start.
 // The token is write-only: no response carries it, the form never reads it back.
 
@@ -108,7 +108,7 @@ export async function checkRegistrySecret(eventID: string, secretID: string): Pr
 const checkReasons = ["unauthorized", "not_found"] as const;
 const checkFailures = ["unreachable", "rate_limited", "not_configured"] as const;
 
-// «Перевірено: 18 жовт. 2026 р., 15:00 — працює» / «… — не працює: <причина>» / «ще не перевірено».
+// “Checked: Oct 18, 2026, 15:00 — works” / “… — does not work: <reason>” / “Not checked yet”.
 export function registryCheckText(check: RegistryCheck): string {
     if (check.State === "ok") return t("manage.registries.check.ok", {date: formatDateTime(check.CheckedAt)});
     if (check.State !== "broken") return t("manage.registries.check.never");

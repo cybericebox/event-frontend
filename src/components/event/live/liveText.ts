@@ -32,7 +32,7 @@ export function liveTextProfile(screen: Pick<LiveLayout["screen"], "anchor">): L
     return screen.anchor === "top-left" ? "led" : "projector";
 }
 
-// «Безпечне поле»: the margin around the canvas for TVs that crop the
+// “Safe area”: the margin around the canvas for TVs that crop the
 // picture edges (overscan), in % of each side.
 export const liveSafeAreaOptions = [0, 2.5, 5] as const;
 
@@ -82,7 +82,7 @@ const widgetRoles: Record<LiveWidget["type"], LiveTextRole[]> = {
     podium: ["body", "caption"], facts: ["caption"], stages: ["body", "caption"], clock: [],
 };
 
-// «Розмір тексту» of a block (K3): S / M / L / XL multiply the screen unit of
+// “Text size” of a block (K3): S / M / L / XL multiply the screen unit of
 // that block. The floors stay: a smaller size never reads below them.
 export const liveTextSizes = {s: 0.85, m: 1, l: 1.2, xl: 1.45} as const;
 export type LiveTextSizeKey = keyof typeof liveTextSizes;
@@ -155,7 +155,7 @@ function numberProp(item: LiveWidget, key: string, fallback: number): number {
 // natural size falls under its floor is raised to the floor on screen, and a
 // widget whose content no longer fits at the effective sizes is named.
 // `eventName` is the real event name the title must fit.
-// `stages` are the event's stages the «Етапи» block lists (sample ones when
+// `stages` are the event's stages the “Stages” block lists (sample ones when
 // there are none, as the editor shows).
 export function liveTextWarnings(layout: LiveLayout, eventName = t("live.text.sampleTitle"), stages: LiveStage[] = []): LiveTextWarning[] {
     const {height, width} = liveCanvasSize(layout);
@@ -184,7 +184,7 @@ export function liveTextWarnings(layout: LiveLayout, eventName = t("live.text.sa
     return warnings;
 }
 
-// «Етапи»: one two-line row per stage, by the same rule the block renders
+// “Stages”: one two-line row per stage, by the same rule the block renders
 // with; the time line keeps the caption floor, the name the body floor.
 function stagesProblem(item: LiveWidget, box: {width: number; height: number}, size: (role: LiveTextRole) => {effective: number}, stages: LiveStage[]): string | null {
     const shown = stages.length ? stages : liveSampleStages(new Date(0).toISOString());
@@ -217,7 +217,7 @@ function fitProblem(item: LiveWidget, boxW: number, boxH: number, heading: numbe
     if (item.type === "timer") {
         const label = item.props.showLabel === false ? null : typeof item.props.label === "string" && item.props.label.trim() ? item.props.label.trim() : t("live.timer.untilFinish");
         const labelSize = (["s", "m", "l"] as const).find(value => value === item.props.labelSize) ?? "m";
-        // The widest line the format prints: «23 год 59 хв» in words, HH:MM(:SS) otherwise.
+        // The widest line the format prints: “23 h 59 min” in words, HH:MM(:SS) otherwise.
         const digits = item.props.digits === "words" ? 12 : item.props.showSeconds === false ? 5 : 8;
         const fit = liveTimerFit({width: boxW, height: boxH, digits, label, labelSize, labelMin: floors.caption});
         return fit.digits < floors.timer || label !== null && fit.label < floors.caption ? t("live.text.timerFit") : null;

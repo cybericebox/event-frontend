@@ -40,7 +40,7 @@ const wrap = () => render(<QueryClientProvider client={new QueryClient({defaultO
 beforeEach(() => {manager.canManage = true;});
 afterEach(() => {cleanup(); vi.restoreAllMocks();});
 
-describe("Банери заходу", () => {
+describe("Event banners", () => {
     it("lists the banners drawn by the shared banner component with their state", async () => {
         mockServer([banner(1), banner(2, {Level: "critical", IsActive: false, Audience: "participants", ActiveFrom: "2026-10-01T08:00:00Z"})]);
         const {container} = wrap();
@@ -110,7 +110,7 @@ describe("Банери заходу", () => {
         wrap();
         await screen.findByText("Банер 1");
         fireEvent.click(screen.getAllByRole("button", {name: "Вимкнути"})[0]);
-        // Optimistic: the label is already «Увімкнути»; the save is still in flight.
+        // Optimistic: the label is already “Turn on”; the save is still in flight.
         await waitFor(() => expect(screen.getAllByRole("button", {name: "Увімкнути"})).toHaveLength(1));
         expect(calls.filter(call => call.method === "PUT")).toHaveLength(1);
         for (const button of screen.getAllByRole("button", {name: /Вимкнути|Увімкнути|Видалити|Редагувати/})) expect((button as HTMLButtonElement).disabled).toBe(false);
@@ -231,7 +231,7 @@ it.each([
     expect(api.filter(call => call.method === "GET").length).toBeGreaterThan(0);
 });
 
-describe("Банери: стан форми і списку", () => {
+describe("Banners: form and list state", () => {
     it("shows the text error only after the field is left empty", async () => {
         mockServer([]);
         wrap();
@@ -245,7 +245,7 @@ describe("Банери: стан форми і списку", () => {
         expect(within(dialog).getByText("Вкажіть текст банера.")).toBeTruthy();
     });
 
-    it("asks before closing a form with changes and keeps them on «Скасувати»", async () => {
+    it("asks before closing a form with changes and keeps them on 'Cancel'", async () => {
         mockServer([]);
         wrap();
         await screen.findByText("Банерів ще немає.");

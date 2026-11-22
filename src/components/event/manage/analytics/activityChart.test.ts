@@ -37,7 +37,7 @@ describe("activity chart", () => {
         expect(option.legend.selected).toEqual({"Спроби": false, "Правильні": false, "Відкриття завдань": false});
     });
 
-    it("marks «зараз» only when told the moment, and only inside the period", () => {
+    it("marks 'now' only when told the moment, and only inside the period", () => {
         const at = Date.parse("2026-09-29T10:07:00Z");
         const marks = activityChartOption(overview, at).series[0].markLine?.data ?? [];
         expect(marks.map(mark => mark.name)).toEqual(["Старт", "Зараз"]);

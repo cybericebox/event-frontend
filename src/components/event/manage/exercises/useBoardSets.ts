@@ -8,7 +8,7 @@ import type {BoardSet} from "./challengeOrder";
 export const exerciseListKey = (eventID: string) => ["event-exercise-attachments", eventID];
 
 // The event's sets (active attachments with their board challenges) and groups,
-// shared by «Групи й порядок» and «Завдання».
+// shared by “Groups and order” and “Task”.
 export function useBoardSets(eventID: string, {enabled = true}: {enabled?: boolean} = {}) {
     const queryClient = useQueryClient();
     // One cheap list: a return to the tab re-reads it, so the flag warnings follow teams that joined meanwhile.

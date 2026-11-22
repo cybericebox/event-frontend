@@ -80,7 +80,7 @@ describe("live table fit", () => {
             // The rank and points columns follow their digits and leave the name 55% of the row.
             expect(fit.rankWidth + fit.pointsWidth).toBeLessThanOrEqual(box.width * 0.45 + 1e-6);
             expect(fit.font).toBeGreaterThanOrEqual(body);
-            // «Команда 12» keeps the full row size on one line.
+            // “Team 12” keeps the full row size on one line.
             expect(fit.names[0]).toEqual({font: fit.font, lines: 1});
             fit.names.forEach((name, index) => {
                 expect(name.font).toBeGreaterThanOrEqual(body);

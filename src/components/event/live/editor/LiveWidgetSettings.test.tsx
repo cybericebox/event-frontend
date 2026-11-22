@@ -23,7 +23,7 @@ function mount(widget: LiveWidget, onProp = vi.fn(), others: LiveWidget[] = []) 
 afterEach(cleanup);
 
 describe("live widget settings", () => {
-    it("puts settings on tabs («Вигляд», «Кольори», «Місце») with the remove icon in the header", () => {
+    it("puts settings on tabs ('Appearance', 'Colours', 'Place') with the remove icon in the header", () => {
         mount({id: "c", type: "chart", x: 1, y: 2, w: 8, h: 6, props: {}});
         expect(screen.getAllByRole("tab").map(tab => tab.textContent)).toEqual(["Вигляд", "Кольори", "Місце"]);
         expect(screen.getByText("Відображення")).toBeTruthy();
@@ -35,7 +35,7 @@ describe("live widget settings", () => {
         expect(screen.getAllByRole("button", {name: /^Про поле|Довідка|про поле/i}).length).toBeGreaterThan(0);
     });
 
-    it("gives tables and podiums a «Нагороди» tab; bars and the legend stay on «Вигляд», the medal colours on «Кольори»", () => {
+    it("gives tables and podiums a 'Awards' tab; bars and the legend stay on 'Appearance', the medal colours on 'Colours'", () => {
         mount({id: "t", type: "table", x: 1, y: 2, w: 6, h: 6, props: {highlightTop: "medals"}}, vi.fn(), [{id: "c", type: "chart", x: 7, y: 2, w: 6, h: 6, props: {}}]);
         expect(screen.getAllByRole("tab").map(tab => tab.textContent)).toEqual(["Вигляд", "Нагороди", "Кольори", "Місце"]);
         expect(screen.getByText("Смуги балів")).toBeTruthy();
@@ -57,7 +57,7 @@ describe("live widget settings", () => {
         fireEvent.click(screen.getByRole("tab", {name: "Кольори"}));
         expect(screen.getByText("Акцент")).toBeTruthy();
         cleanup();
-        // A QR code draws nothing in the accent; the timer has one «Формат» and no seconds switch.
+        // A QR code draws nothing in the accent; the timer has one “Aspect” and no seconds switch.
         mount({id: "q", type: "qr", x: 1, y: 2, w: 2, h: 2, props: {value: "/"}});
         fireEvent.click(screen.getByRole("tab", {name: "Кольори"}));
         expect(screen.queryByText("Акцент")).toBeNull();

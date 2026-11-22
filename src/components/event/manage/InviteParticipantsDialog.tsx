@@ -28,8 +28,8 @@ export function invitationFailureText(result: InvitationResult): string {
     return t("manage.invites.result.line", {email: result.Email, reason: t(`manage.invites.result.${result.Code ?? "failed"}`)});
 }
 
-// «Запросити учасників» (or to one team), like «Створити команду»: «Вручну»
-// takes addresses as chips, «З CSV-файлу» a file with email, first_name,
+// “Invite participants” (or to one team), like “Create team”: “Manually”
+// takes addresses as chips, “From a CSV file” a file with email, first_name,
 // last_name (names prefill the pending accounts). A file dropped on the dialog
 // switches to the CSV mode.
 export function InviteParticipantsDialog({eventID, open, onOpenChange, onSent, team, initialEmails = []}: {

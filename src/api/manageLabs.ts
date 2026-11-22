@@ -112,10 +112,17 @@ export const ModeratorChallengeSchema = z.object({
 });
 export type ModeratorChallenge = z.infer<typeof ModeratorChallengeSchema>;
 
+// A gateway of the lab (VPN or Internet), in the order of the lab spec. The participant answer has no reverse fields.
+export const labGatewaySchema = z.object({
+    Name: z.string(), Kind: z.enum(["vpn", "internet"]), CIDR: optionalText, Ready: z.boolean(),
+    ReverseConnections: z.boolean().optional(), Reverse: z.enum(["blocked", "allowed", "not_enforced"]).optional(),
+});
+export type LabGateway = z.infer<typeof labGatewaySchema>;
+
 const labAccessSchema = z.object({Device: optionalText, Port: z.number().int(), Protocol: optionalText, URL: optionalText});
 export const LabRuntimeSchema = z.object({
     Lab: LabLifecycleSchema.nullish().transform(value => value ?? null),
-    Phase: optionalText, Ready: z.boolean(), Queue: LabQueueSchema.nullish().transform(value => value ?? null), VPNCIDR: optionalText, InternetCIDR: optionalText,
+    Phase: optionalText, Ready: z.boolean(), Queue: LabQueueSchema.nullish().transform(value => value ?? null), Gateways: z.array(labGatewaySchema),
     Access: z.array(labAccessSchema).nullish().transform(value => value ?? []),
 });
 export type LabRuntime = z.infer<typeof LabRuntimeSchema>;

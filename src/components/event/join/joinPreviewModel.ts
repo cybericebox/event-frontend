@@ -6,7 +6,7 @@ export type JoinPreviewStep = "form" | "result" | "team" | "done";
 export const joinOutcomes: JoinOutcome[] = ["approved", "pending", "rejected"];
 
 // Registration: 0 = by invitation, 1 = with approval, 2 = open. Open and invitation end in
-// «Ви зареєстровані», with approval the application waits for a decision.
+// “You are registered”, with approval the application waits for a decision.
 export function defaultOutcome(registration: number): JoinOutcome {
     return registration === 1 ? "pending" : "approved";
 }

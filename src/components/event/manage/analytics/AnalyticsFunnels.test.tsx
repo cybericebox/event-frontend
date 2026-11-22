@@ -13,7 +13,7 @@ const funnels = {
     Applications: {Submitted: 20, Decided: 15, Approved: 12, Rejected: 3, DecidedRate: 0.75, ApprovedRate: 0.8, RejectedRate: 0.2, MedianDecisionSeconds: 187200},
 };
 
-describe("Воронки комунікацій", () => {
+describe("Communication funnels", () => {
     it("shows stage numbers, conversion and median of every card", () => {
         render(<AnalyticsFunnels funnels={AnalyticsCommunicationsSchema.shape.Funnels.parse(funnels)!} />);
         const invitations = within(screen.getByTestId("funnel-invitations"));

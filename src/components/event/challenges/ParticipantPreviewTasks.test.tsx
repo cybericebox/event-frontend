@@ -65,18 +65,24 @@ it("starts a dynamic run on click, polls preparation and opens the ready service
     const {client} = mount({...base, Infrastructure: true, PreviewDynamic: true, Snapshot: {...base.Snapshot, description: {root: {type:"root", children:[{type:"copy-block", children:[{type:"variable",varName:"web"}]}]}}, placeholders:[{key:"web",kind:"external.link",device_name:"web"}]}});
     expect(fetchMock).not.toHaveBeenCalled();
     fetchMock.mockResolvedValueOnce(reply({ID: rawTask, SelectionID: selection, Dynamic: true, ExpiresAt: "2099-10-16T12:00:00Z"}));
-    fetchMock.mockResolvedValueOnce(reply({Phase: "pending", Ready: false}));
+    fetchMock.mockResolvedValueOnce(reply({Phase: "pending", Ready: false, Gateways: []}));
     fireEvent.click(screen.getByRole("button", {name: "Запустити середовище"}));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
     expect(document.querySelector("dialog[open]")).toBeNull();
     expect(document.querySelector(".ib-cmodal__desc")).toBeNull();
-    fetchMock.mockResolvedValueOnce(reply({Phase: "ready", Ready: true, Access: [{Device: "web", Port: 80, Protocol: "http", URL: "https://lab.test"}]}));
+    fetchMock.mockResolvedValueOnce(reply({Phase: "ready", Ready: true, Gateways: [], Access: [{Device: "web", Port: 80, Protocol: "http", URL: "https://lab.test"}]}));
     await act(async () => {await client.refetchQueries({queryKey: ["event-challenge-lab", "preview", "event", base.EventChallengeID], exact: true});});
     const tab = {opener: null, close: vi.fn(), location: {href: "about:blank"}};
     vi.spyOn(window, "open").mockReturnValue(tab as unknown as Window);
-    fetchMock.mockResolvedValueOnce(reply({URL: "https://lab.test/_auth?t=preview", ExpiresAt: "2099-10-16T12:00:00Z"}));
+    const posted: {action: string; target: string; fields: Record<string, string>}[] = [];
+    vi.spyOn(HTMLFormElement.prototype, "submit").mockImplementation(function (this: HTMLFormElement) {
+        posted.push({action: this.action, target: this.target, fields: Object.fromEntries([...new FormData(this).entries()].map(([name, value]) => [name, String(value)]))});
+    });
+    fetchMock.mockResolvedValueOnce(reply({URL: "https://lab.test/_auth", Grant: "preview.grant", ExpiresAt: "2099-10-16T12:00:00Z"}));
     fireEvent.click(await screen.findByRole("button", {name: "Відкрити в новій вкладці"}));
-    await waitFor(() => expect(tab.location.href).toBe("https://lab.test/_auth?t=preview"));
+    await waitFor(() => expect(posted).toHaveLength(1));
+    expect(posted[0]).toEqual({action: "https://lab.test/_auth", target: expect.stringMatching(/^cib-lab-./), fields: {grant: "preview.grant", next: "/"}});
+    expect(tab.location.href).toBe("about:blank");
     expect(fetchMock.mock.calls.every(([url]) => String(url).includes("/manage/participant-preview/"))).toBe(true);
     expect(fetchMock.mock.calls.at(-1)?.[0]).toContain(`/selections/${selection}/proxy`);
 });
@@ -108,7 +114,7 @@ it("names the running labs at the test-lab cap and stops only the one chosen, th
     expect(fetchMock).toHaveBeenCalledTimes(1);
     fetchMock.mockResolvedValueOnce(new Response(null, {status: 204}));
     fetchMock.mockResolvedValueOnce(reply({ID: rawTask, SelectionID: selection, Dynamic: true, ExpiresAt: "2099-10-16T12:00:00Z"}));
-    fetchMock.mockResolvedValue(reply({Phase: "pending", Ready: false}));
+    fetchMock.mockResolvedValue(reply({Phase: "pending", Ready: false, Gateways: []}));
     fireEvent.click(screen.getAllByRole("button", {name: "Зупинити"})[0]);
     await waitFor(() => expect(fetchMock.mock.calls.length).toBeGreaterThanOrEqual(3));
     expect(fetchMock.mock.calls[1][0]).toContain("/labs/lab-studio");
@@ -124,7 +130,7 @@ it("starts the preview's laboratory for the chosen length", async () => {
     fireEvent.pointerDown(length, {button: 0, ctrlKey: false});
     fireEvent.click(await screen.findByRole("menuitemradio", {name: "30 хв"}));
     fetchMock.mockResolvedValueOnce(reply({ID: rawTask, SelectionID: selection, Dynamic: true, ExpiresAt: "2099-10-16T12:00:00Z"}));
-    fetchMock.mockResolvedValue(reply({Phase: "pending", Ready: false}));
+    fetchMock.mockResolvedValue(reply({Phase: "pending", Ready: false, Gateways: []}));
     fireEvent.click(screen.getByRole("button", {name: "Запустити середовище"}));
     await waitFor(() => expect(fetchMock.mock.calls[0]?.[0]).toContain(`/selections/${selection}/start`));
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({LeaseMinutes: 30});
@@ -186,12 +192,12 @@ it("opens a dynamic task that has a run, and one whose launch failed or ended so
 });
 
 // Test tasks are staff's own: they show whatever the simulated registration, team and event phase say, unless the staff
-// member switches «Показати завдання» off to see the real phase screens.
+// member switches “Show tasks” off to see the real phase screens.
 it.each([
     ["simulated registration not finished", {status: 0}],
     ["no simulated team in a team event", {participation: 1, team: null}],
     ["a team that is not formed before the start", {participation: 1, team: {Formed: false}}],
-])("shows the test tasks with the note when «Показати завдання» is on and %s", async (_name, patch) => {
+])("shows the test tasks with the note when 'Show tasks' is on and %s", async (_name, patch) => {
     Object.assign(switches, patch);
     mountBoard(dynamicTask("Web lab"));
     expect(await screen.findByRole("button", {name: /^Web lab/})).toBeTruthy();
@@ -199,7 +205,7 @@ it.each([
     expect(screen.queryByText(/Готуємо вашу участь/)).toBeNull();
 });
 
-it("shows the real phase screen when «Показати завдання» is off", async () => {
+it("shows the real phase screen when 'Show tasks' is off", async () => {
     Object.assign(switches, {tasks: false, participation: 1, team: {Formed: false}});
     mountBoard(dynamicTask("Web lab"));
     expect(await screen.findByText(/Готуємо вашу участь/)).toBeTruthy();

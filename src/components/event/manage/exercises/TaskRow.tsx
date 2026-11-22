@@ -51,7 +51,7 @@ export function RequiredNumber({id, title, help, value, min, max, error, disable
     </div>;
 }
 
-// «Оцінювання» of one task: as the event, or its own static / dynamic value.
+// “Scoring” of one task: as the event, or its own static / dynamic value.
 function TaskScoring({eventID, attachmentID, challenge, scoring, lifecycle, disabled, onSaved}: {
     eventID: string; attachmentID: string; challenge: EventBoardChallenge; scoring: ManageScoring; lifecycle: ManageLifecycle;
     disabled: boolean; onSaved: () => Promise<unknown>;
@@ -122,7 +122,7 @@ function TaskScoring({eventID, attachmentID, challenge, scoring, lifecycle, disa
     </section>;
 }
 
-// «Підказки»: on/off plus the event's price per hint (the catalog sets only the level).
+// “Hints”: on/off plus the event's price per hint (the catalog sets only the level).
 function TaskHints({eventID, attachmentID, challenge, hintsDisabled, disabled, onSaved, onHintsEnabled}: {
     eventID: string; attachmentID: string; challenge: EventBoardChallenge; hintsDisabled: boolean; disabled: boolean; onSaved: () => Promise<unknown>; onHintsEnabled: (enabled: boolean) => void;
 }) {
@@ -172,7 +172,7 @@ function TaskHints({eventID, attachmentID, challenge, hintsDisabled, disabled, o
     </section>;
 }
 
-// «Спроби»: the task's own limit of wrong flag submissions; empty = the event's value. Saves like the hints switch:
+// “Attempts”: the task's own limit of wrong flag submissions; empty = the event's value. Saves like the hints switch:
 // at once, queued, nothing disabled while it runs.
 function TaskAttempts({challenge, eventAttempts, disabled, onMaxAttempts}: {
     challenge: EventBoardChallenge; eventAttempts: number | null; disabled: boolean; onMaxAttempts: (limit: number | null) => void;
@@ -195,7 +195,7 @@ export function HintMark({hints}: {hints: HintIndicator}) {
 }
 
 // One task of a set: a thin row (name, first description line, badges) that
-// expands into «Оцінювання», «Підказки» and «Спроби». A task has no actions of its own:
+// expands into “Scoring”, “Hints” and “Attempts”. A task has no actions of its own:
 // a set is edited, shown and removed as a whole.
 export function TaskRow({eventID, attachment, challenge, scoring, lifecycle, hintsDisabled, stand, canManage, eventAttempts, onSaved, onHintsEnabled, onMaxAttempts}: {
     eventID: string; attachment: EventExerciseAttachment; challenge: EventBoardChallenge; scoring: ManageScoring; lifecycle: ManageLifecycle;

@@ -45,7 +45,7 @@ function mount(canManage = true, editor = data) {
         onScreenSwitch={api.switchScreen} onScreensChanged={api.screensChanged} /></QueryClientProvider>);
 }
 const widgets = () => document.querySelectorAll(".event-live-editor__native .live-widget").length;
-// A palette block opens large first; «Додати на екран» adds it (or is off when the screen can't take it).
+// A palette block opens large first; “Add to the screen” adds it (or is off when the screen can't take it).
 function openPalette(name: string) {
     fireEvent.click(screen.getByRole("button", {name: `Блок «${name}»: переглянути й додати`}));
     return screen.getByRole("button", {name: "Додати на екран"}) as HTMLButtonElement;
@@ -156,7 +156,7 @@ describe("live editor", () => {
         expect(screen.getByText("Шаблон: Велике табло · змінено")).toBeTruthy();
     });
 
-    it("applies «Повний показ» to every scene", () => {
+    it("applies 'Full show' to every scene", () => {
         mount();
         fireEvent.click(screen.getByRole("button", {name: /Застосувати шаблон/}));
         fireEvent.click(screen.getByRole("radio", {name: /Повний показ/}));
@@ -167,7 +167,7 @@ describe("live editor", () => {
         expect(document.querySelector(".event-live-editor__native .live-widget--facts")).not.toBeNull();
         fireEvent.click(screen.getByRole("tab", {name: /Завершено/}));
         expect(document.querySelector(".event-live-editor__native .live-widget--podium")).not.toBeNull();
-        // «Заморожено» gets its own copy of the board.
+        // “Frozen” gets its own copy of the board.
         fireEvent.click(screen.getByRole("tab", {name: /Заморожено/}));
         expect(document.querySelector(".event-live-editor__native .live-widget--solves")).not.toBeNull();
     });
@@ -175,7 +175,7 @@ describe("live editor", () => {
     it("edits every scene on its own; the tabs mark only the live scene", () => {
         mount(true, separate);
         const tabs = screen.getAllByRole("tab").filter(tab => tab.closest(".event-live-scenes__tabs"));
-        // One line per tab: the state name only; the live one has a dot and «зараз» as its tooltip.
+        // One line per tab: the state name only; the live one has a dot and “now” as its tooltip.
         expect(tabs.map(tab => tab.textContent)).toEqual(["До старту", "Триває", "Заморожено", "Завершено"]);
         const now = document.querySelectorAll(".event-live-scene__now");
         expect(now).toHaveLength(1);
@@ -255,7 +255,7 @@ describe("live editor", () => {
             fireEvent.click(screen.getByRole("tab", {name}));
             expect(document.querySelector(".event-live-editor__native .live-widget--chart")).not.toBeNull();
         }
-        // Change «Завершено», then keep its screen as the one for all states.
+        // Change “Finished”, then keep its screen as the one for all states.
         fireEvent.click(document.querySelector(".event-live-editor__native .live-widget--chart")!);
         fireEvent.keyDown(window, {key: "Delete"});
         fireEvent.click(within(screen.getByText("Прибрати блок?").closest("dialog, [role=alertdialog], [role=dialog]") as HTMLElement).getByRole("button", {name: "Прибрати блок"}));
@@ -327,7 +327,7 @@ describe("live editor", () => {
         expect(document.querySelectorAll(".event-live-editor__native .live-widget")).toHaveLength(48);
     });
 
-    it("says on the «Заморожено» tab that the scene will not show while the freeze is not applied", async () => {
+    it("says on the 'Frozen' tab that the scene will not show while the freeze is not applied", async () => {
         api.settings.mockResolvedValue({ScoreboardVisibility: 0, FreezeEnabled: true, FreezeMinutes: 60, LiveFreeze: false, ChartEnabled: true, ChartTeams: 10, RowsLimit: null, OpenedAt: null,
             Freeze: {Enabled: true, FrozenAt: null, FinishAt: null, OpenedAt: null, Active: false, Applied: false}});
         mount(true, separate);

@@ -95,3 +95,25 @@ it("says the VPN could not be checked when the stand status fails, instead of «
  render(<QueryClientProvider client={client}><EventVpnProvider eventID="e1" eventTag="test" enabled><VpnHeaderButton/></EventVpnProvider></QueryClientProvider>);
  await vi.waitFor(()=>expect(screen.getByRole("button",{name:/VPN:/}).getAttribute("aria-label")).toBe("VPN: не вдалося перевірити стан. Натисніть, щоб переглянути налаштування."));
 });
+
+// «Connected» must show within seconds of the first handshake: while not connected the status polls fast, once connected it slows down.
+it("polls the VPN status every 5 s until connected, then every 30 s",async()=>{
+ vi.useFakeTimers({toFake:["setTimeout","clearTimeout","setInterval","clearInterval","Date"]});
+ try{
+  api.stand.mockResolvedValue({Status:"ready",VPNReady:true});
+  api.probe.mockResolvedValue({GatewayIP:"10.8.0.1",ProbeURL:"http://10.8.0.1:8088/",Connected:false});
+  const client=new QueryClient({defaultOptions:{queries:{retry:false}}});
+  render(<QueryClientProvider client={client}><EventVpnProvider eventID="e1" eventTag="test" enabled><VpnHeaderButton/></EventVpnProvider></QueryClientProvider>);
+  await vi.advanceTimersByTimeAsync(100);
+  expect(api.probe).toHaveBeenCalledTimes(1);
+  await vi.advanceTimersByTimeAsync(5000);
+  expect(api.probe).toHaveBeenCalledTimes(2);
+  api.probe.mockResolvedValue({GatewayIP:"10.8.0.1",ProbeURL:"http://10.8.0.1:8088/",Connected:true});
+  await vi.advanceTimersByTimeAsync(5000);
+  expect(api.probe).toHaveBeenCalledTimes(3);
+  await vi.advanceTimersByTimeAsync(25000);
+  expect(api.probe).toHaveBeenCalledTimes(3);
+  await vi.advanceTimersByTimeAsync(5100);
+  expect(api.probe).toHaveBeenCalledTimes(4);
+ }finally{vi.useRealTimers();}
+});

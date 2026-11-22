@@ -56,13 +56,13 @@ describe("inbox model", () => {
     expect(inbox.isOpenRequest(request("r", { ResolvedAt: "2026-09-29T10:00:00Z" }))).toBe(false)
     expect(inbox.isOpenRequest(request("o"))).toBe(true)
     expect(inbox.isOpenRequest(request("read", { ReadAt: "2026-09-29T10:00:00Z" }))).toBe(true)
-    // Backfilled legacy rows keep ActionRequired false even in «Запити».
+    // Backfilled legacy rows keep ActionRequired false even in “Requests”.
     expect(inbox.isOpenRequest(item("legacy", { Category: "requests" }))).toBe(false)
     expect(inbox.isUnread(item("u"))).toBe(true)
     expect(inbox.isUnread(item("x", { ReadAt: "2026-09-29T10:00:00Z" }))).toBe(false)
   })
   
-  it("«Вирішено» only where the server says Resolvable on an open request", () => {
+  it("'Resolved' only where the server says Resolvable on an open request", () => {
     expect(inbox.canResolve(request("alarm", { Type: "resources.alarm.raised", Resolvable: true }))).toBe(true)
     expect(inbox.canResolve(request("alarm", { Resolvable: true, ResolvedAt: "2026-09-29T10:00:00Z" }))).toBe(false)
     expect(inbox.canResolve(request("alarm", { Resolvable: false }))).toBe(false)
@@ -104,6 +104,8 @@ describe("inbox model", () => {
     expect(inbox.safeHref(" #top ")).toBe("#top")
     expect(inbox.safeHref("mailto:a@b.c")).toBe("mailto:a@b.c")
     expect(inbox.safeHref("//evil.example")).toBe(null)
+    expect(inbox.safeHref("/\\evil.example")).toBe(null)
+    expect(inbox.safeHref("/\t/evil.example")).toBe(null)
     expect(inbox.safeHref("javascript:alert(1)")).toBe(null)
     expect(inbox.safeHref("")).toBe(null)
   })

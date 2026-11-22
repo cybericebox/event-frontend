@@ -185,7 +185,7 @@ export function EmailTemplatePage({signal, versionID}: {signal: string; versionI
                     <ManageFieldLabel title={t("manage.email.preheader")} help={t("manage.email.preheaderHelp")} />
                     <VariableRichText key={`preheader-${template.ID}`} value={draft.Preheader} onChange={Preheader => change({...draft, Preheader})} variables={variables} placeholder={t("manage.email.optional")} dotted />
                 </div>
-                {/* Read-only, the body is the preview on the right: no empty «Текст» field here. */}
+                {/* Read-only, the body is the preview on the right: no empty “Text” field here. */}
                 {editable && <div className="event-manage-field" role="group" aria-label={t("manage.tpl.tpl.body")} aria-invalid={editable && !!bodyError || undefined} aria-describedby={editable && bodyError ? `email-body-error-${template.ID}` : undefined}>
                     <ManageFieldLabel title={t("manage.tpl.tpl.body")} help={t("manage.email.blocks.textHelp")} />
                     <BlockEditor key={`body-${template.ID}`} value={bodyContent} onChange={blocks => change({...draft, Body: footer ? [...blocks, footer] : blocks})} variables={variables}

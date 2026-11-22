@@ -27,7 +27,7 @@ async function send(eventID: string, path: string, body: Record<string, unknown>
 // Role follows the backend TeamRole: 0 = captain, 1 = member.
 export const TeamRole = {Captain: 0, Member: 1} as const;
 // Pending marks an invitee who has not accepted the team invitation yet.
-// A pending invitee has no name yet (the server sends it empty): show «Запрошено», never a blank.
+// A pending invitee has no name yet (the server sends it empty): show “Invited”, never a blank.
 // UserID comes only to the captain (their actions need it); for anyone else it is "" for the other people.
 const memberSchema = z.object({UserID: z.string().uuid().optional().transform(value => value ?? ""), DisplayName: z.string(), Role: z.number().int(), Own: z.boolean(), Pending: z.boolean().default(false)})
     .transform(member => ({...member, DisplayName: member.DisplayName.trim() || t(member.Pending ? "participation.team.invitedName" : "participation.team.unnamed")}));

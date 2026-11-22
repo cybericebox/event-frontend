@@ -17,7 +17,7 @@ function renderPage() {
     return render(<QueryClientProvider client={new QueryClient({defaultOptions: {queries: {retry: false}}})}><InAppTemplatePage signal={FINISHED} /></QueryClientProvider>);
 }
 
-describe("Сторінка сповіщення на сайті", () => {
+describe("On-site notification page", () => {
     afterEach(() => { cleanup(); router.replace.mockClear(); vi.restoreAllMocks(); });
 
     it("shows the platform template read-only next to the preview", async () => {

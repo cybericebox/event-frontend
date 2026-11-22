@@ -22,7 +22,7 @@ function renderPage() {
     return render(<QueryClientProvider client={new QueryClient({defaultOptions: {queries: {retry: false}}})}><ParticipationSettingsPage /></QueryClientProvider>);
 }
 
-describe("Налаштування участі, блок інфраструктури", () => {
+describe("Participation settings, infrastructure block", () => {
     afterEach(() => { cleanup(); Object.assign(server, {infrastructure: false, status: "not_published", configured: false}); });
 
     it("before publication without infrastructure asks the platform administrator", async () => {

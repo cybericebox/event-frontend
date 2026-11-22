@@ -13,7 +13,7 @@ const en = errorsEn as Record<string, string>
 // Codes whose message carries the wait from Retry-After (HTTP 429).
 const waitCodes = new Set([428])
 
-// «45 с», «3 хв», «2 год»: the wait rounded up to the unit.
+// “45 s”, “3 min”, “2 h”: the wait rounded up to the unit.
 export function waitText(seconds: number): string {
   if (seconds < 60) return t("error.wait.seconds", {count: seconds})
   if (seconds < 3600) return t("error.wait.minutes", {count: Math.ceil(seconds / 60)})

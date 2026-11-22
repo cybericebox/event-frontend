@@ -7,7 +7,7 @@ const GIB = 1024 ** 3;
 const current = {allocated: {CPUMillicores: 2000, MemoryBytes: 8 * GIB}, to: "2026-10-05T13:00:00Z"};
 
 describe("change request draft", () => {
-    it("needs at least one of «на скільки більше» and «продовжити до»", () => {
+    it("needs at least one of 'how much more' and 'extend until'", () => {
         expect(buildChangeRequest({...emptyDraft, reason: "more teams"}, current)).toEqual({issue: "empty"});
     });
 
@@ -59,7 +59,7 @@ describe("amount format", () => {
         expect(formatCpu(2000)).toBe("2 vCPU");
     });
 
-    it("reads memory in МіБ and ГіБ with a decimal comma", () => {
+    it("reads memory in MiB and GiB with a decimal comma", () => {
         expect(formatMemory(512 * MIB)).toBe("512 МіБ");
         expect(formatMemory(3.375 * 1024 * MIB)).toBe("3,4 ГіБ");
         expect(formatMemory(0)).toBe("0 Б");

@@ -16,9 +16,10 @@ export function challengeContentReadiness(challenge: OwnChallenge, values: Descr
     let waiting = false;
     for (const name of names) {
         const placeholder = challenge.Snapshot.placeholders.find(item => item.key === name);
-        if (!placeholder || !["vpn.subnet", "internet.subnet", "ip", "external.link"].includes(placeholder.kind)) return "unavailable";
+        if (!placeholder || !["gateway.subnet", "ip", "external.link"].includes(placeholder.kind)) return "unavailable";
         const staticIP = placeholder.kind === "ip" && placeholder.ip_reference === "static";
-        if (placeholder.kind === "ip" && !["vpn", "internet", "static"].includes(placeholder.ip_reference ?? "")) return "unavailable";
+        if (placeholder.kind === "ip" && !["gateway", "static"].includes(placeholder.ip_reference ?? "")) return "unavailable";
+        if ((placeholder.kind === "gateway.subnet" || placeholder.ip_reference === "gateway") && !placeholder.gateway) return "unavailable";
         if (placeholder.kind === "external.link" && !placeholder.device_name) return "unavailable";
         const value = values.variables[name];
         if (!value || value === "—") {

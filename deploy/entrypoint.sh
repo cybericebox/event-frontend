@@ -121,10 +121,22 @@ for name in NEXT_PUBLIC_SUPPORT_EMAIL RENDER_SECRET; do
 done
 # Optional, with baked defaults.
 : "${NEXT_PUBLIC_GOOGLE_ANALYTICS_ID:=}"
-: "${NEXT_PUBLIC_SHOW_PARTNERS:=true}"
 : "${NEXT_PUBLIC_SHOW_INTEGRITY:=true}"
 : "${NEXT_PUBLIC_WIREGUARD_INSTALL_URL:=https://www.wireguard.com/install/}"
-export NEXT_PUBLIC_GOOGLE_ANALYTICS_ID NEXT_PUBLIC_SHOW_PARTNERS NEXT_PUBLIC_SHOW_INTEGRITY NEXT_PUBLIC_WIREGUARD_INSTALL_URL
+export NEXT_PUBLIC_GOOGLE_ANALYTICS_ID NEXT_PUBLIC_SHOW_INTEGRITY NEXT_PUBLIC_WIREGUARD_INSTALL_URL
+
+# Installation settings (all optional, no value = not shown, deploy/cfg-check.sh): URLs are empty or https://; the flag is true or false (default false).
+# The root layout writes each value into an attribute of <html> and src/styles/cfg.css hides the blocks by it, so every one is exported to be substituted
+# (an empty value is substituted too: the placeholder must not stay). The substitution below reaches the server chunks and the client chunks alike.
+. /usr/local/lib/cfg-check.sh
+# The list is a variable, not a `for name in NEXT_PUBLIC_...` line: those lines are read as the REQUIRED values.
+optional_urls="NEXT_PUBLIC_MAIN_SITE_URL NEXT_PUBLIC_COOKIES_URL"
+for name in $optional_urls; do
+  cfg_url_check "$name" || exit 1
+  eval "export $name=\"\${$name:-}\""
+done
+cfg_flag_check NEXT_PUBLIC_SHOW_ICE_DEPARTMENT_SUPPORT || exit 1
+export NEXT_PUBLIC_SHOW_ICE_DEPARTMENT_SUPPORT="${NEXT_PUBLIC_SHOW_ICE_DEPARTMENT_SUPPORT:-false}"
 
 # One pass: a single sed script with an expression per NEXT_PUBLIC_* variable, run once over each
 # file that holds a placeholder (in parallel: busybox sed is slow on the minified bundles). Only the

@@ -1,7 +1,7 @@
 import {z} from "zod";
 import {analyticsRequest, periodQuery, wholeEvent, type AnalyticsPeriod} from "@/api/manageAnalytics";
 
-// «Стенди» (docs/EVENT-ANALYTICS.md §6.5): GET .../manage/analytics/stands.
+// “Stands” (docs/EVENT-ANALYTICS.md §6.5): GET .../manage/analytics/stands.
 // Durations are seconds; null means there is nothing to measure yet.
 
 const count = z.number().int();

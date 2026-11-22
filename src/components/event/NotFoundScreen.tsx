@@ -5,8 +5,8 @@ import {t} from "@/i18n/t";
 import {goBack} from "./EventErrorScreen";
 import {ErrorPage} from "./ErrorPage";
 
-// «Page not found» inside this site: the error page with code 404, «На головну» (the event home) and
-// «Назад». A missing or unavailable EVENT is EventUnavailableScreen. `block` is the column inside the
+// «Page not found» inside this site: the error page with code 404, “Home” (the event home) and
+// “Back”. A missing or unavailable EVENT is EventUnavailableScreen. `block` is the column inside the
 // shell's content area (the shell keeps its navbar); without it the screen fills the viewport with the footer.
 export function NotFoundScreen({title = t("error.notFound"), body = t("error.notFoundDescription"), block = false}: {
     title?: string;

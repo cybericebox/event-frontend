@@ -25,7 +25,7 @@ export type ManageAttempt = z.infer<typeof attemptSchema>;
 export type ManageAttemptsPage = z.infer<typeof pageSchema>;
 export type AttemptDecision = ManageAttempt["Decision"];
 
-// Filters of the «Спроби» page. Period bounds are the date-time picker's
+// Filters of the “Attempts” page. Period bounds are the date-time picker's
 // wall-clock values in the viewer's time zone, sent as UTC ISO; "" = no bound.
 export type AttemptFilters = {teamID: string | null; participantID: string | null; challengeID: string | null; correct: boolean | null; from: string; to: string};
 export const emptyAttemptFilters: AttemptFilters = {teamID: null, participantID: null, challengeID: null, correct: null, from: "", to: ""};
@@ -72,7 +72,7 @@ export function getManageAttempts(eventID: string, filters: AttemptFilters, curs
     return request(eventID, `solution-attempts?${attemptQueryParams(filters, cursor, pageSize)}`, pageSchema);
 }
 
-// «Анулювати розвʼязок»: rejects every accepted attempt of the team+challenge
+// “Annul solve”: rejects every accepted attempt of the team+challenge
 // pair at once. 409 NothingToAnnul when the pair has no accepted attempt.
 export function annulManageSolve(eventID: string, teamID: string, challengeID: string, reason: string) {
     return request(eventID, "solution-attempts/annul", z.object({TeamID: id, ChallengeID: id, Rejected: z.number().int()}), "POST", {TeamID: teamID, ChallengeID: challengeID, Reason: reason});

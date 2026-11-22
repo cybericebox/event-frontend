@@ -23,7 +23,7 @@ function renderPage(signal = FINISHED, versionID?: string) {
     return render(<QueryClientProvider client={new QueryClient({defaultOptions: {queries: {retry: false}}})}><EmailTemplatePage signal={signal} versionID={versionID} /></QueryClientProvider>);
 }
 
-describe("Сторінка листа", () => {
+describe("Email page", () => {
     afterEach(() => { cleanup(); manager.canManage = true; router.replace.mockClear(); vi.restoreAllMocks(); });
 
     it("shows the platform template read-only with its live preview", async () => {
@@ -33,7 +33,7 @@ describe("Сторінка листа", () => {
         expect(frame.getAttribute("srcdoc")).toContain("Привіт, учаснику");
         expect(screen.getByRole("heading", {level: 1, name: "Захід завершено"})).toBeTruthy();
         expect(screen.getByRole("textbox", {name: "Тема листа", hidden: true}).closest("[inert]")).not.toBeNull();
-        // Only the top orange notice: no second «Тільки перегляд» box in the body.
+        // Only the top orange notice: no second “View only” box in the body.
         expect(screen.queryByTestId("body-readonly")).toBeNull();
         expect(screen.getByTestId("template-notice").textContent).toContain("шаблон за замовчуванням");
         expect(screen.queryByText(/Натисніть «Редагувати»/)).toBeNull();
@@ -56,7 +56,7 @@ describe("Сторінка листа", () => {
         expect(screen.queryByTestId("template-notice")).toBeNull();
     });
 
-    it("tells a viewer the page is read-only instead of pointing to «Редагувати»", async () => {
+    it("tells a viewer the page is read-only instead of pointing to 'Edit'", async () => {
         manager.canManage = false;
         fakeServer("email", subs, [emailTemplate(1, FINISHED), emailTemplate(2, FINISHED, {Source: "event", Status: "published"})]);
         renderPage();

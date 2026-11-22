@@ -12,7 +12,7 @@ describe("stage locks", () => {
         expect(stageLocks(stage())).toEqual({name: false, opens: false, closes: false, returnable: false, canClose: false, canDelete: true});
         expect(stageLocks(stage({First: true, Last: true}))).toMatchObject({opens: false, closes: false});
     });
-    it("open: the start is locked, the rest edits, «Закрити зараз» is offered, it is never deletable", () => {
+    it("open: the start is locked, the rest edits, 'Close now' is offered, it is never deletable", () => {
         expect(stageLocks(stage({State: "open"}))).toEqual({name: false, opens: true, closes: false, returnable: false, canClose: true, canDelete: false});
     });
     it("closed: only the name edits", () => {

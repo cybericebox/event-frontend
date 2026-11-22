@@ -42,7 +42,7 @@ export function MailSettingsPanel() {
     const [busy, setBusyState] = useState({identity: false, smtp: false, test: false, reset: false});
     const setBusy = (key: keyof typeof busy, value: boolean) => setBusyState(current => ({...current, [key]: value}));
     const [test, setTest] = useState<MailTestResult | null>(null);
-    // A failed save stays next to its form's «Зберегти» until the next change or save.
+    // A failed save stays next to its form's “Save” until the next change or save.
     const [saveFailure, setSaveFailure] = useState({identity: "", smtp: ""});
     const [confirmReset, setConfirmReset] = useState(false);
     const [resetError, setResetError] = useState("");

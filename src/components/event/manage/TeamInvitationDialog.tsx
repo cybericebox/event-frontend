@@ -2,7 +2,7 @@
 
 import {InviteParticipantsDialog} from "./InviteParticipantsDialog";
 
-// Invitations straight into one team: the same dialog as «Запросити учасників».
+// Invitations straight into one team: the same dialog as “Invite participants”.
 export function TeamInvitationDialog({eventID, team, onClose, onSent}: {
     eventID: string;
     team: {ID: string; Name: string; InitialEmails?: string[]} | null;

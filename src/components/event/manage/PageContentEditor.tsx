@@ -65,7 +65,7 @@ export function CustomPageEditor({slug}: {slug?: string}) {
     const [busy, setBusy] = useState<"save" | "publish" | "discard" | null>(null);
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [deleteError, setDeleteError] = useState("");
-    // A new page shows a field's error once the field is left or after «Зберегти» / «Опублікувати», never on the untouched form.
+    // A new page shows a field's error once the field is left or after “Save” / “Publish”, never on the untouched form.
     const [touched, setTouched] = useState<ReadonlySet<"title" | "slug">>(() => new Set());
     const [attempted, setAttempted] = useState(false);
     const detailsRef = useRef<HTMLDivElement>(null);
@@ -141,7 +141,7 @@ export function CustomPageEditor({slug}: {slug?: string}) {
         return result;
     }
 
-    // Pressing «Зберегти» / «Опублікувати» on an incomplete new page shows its errors and moves to the first one.
+    // Pressing “Save” / “Publish” on an incomplete new page shows its errors and moves to the first one.
     function reveal() {
         setAttempted(true);
         setDetailsOpen(true);

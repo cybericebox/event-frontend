@@ -25,7 +25,7 @@ export function taskBadges(challenge: Pick<EventBoardChallenge, "ScoringOverride
 
 export type SetStatus = "shown" | "hidden" | "broken";
 
-// A set's state for its header icon (and its tasks in «Групи й порядок»):
+// A set's state for its header icon (and its tasks in “Groups and order”):
 // a set that needs missing infrastructure cannot work, whatever its visibility.
 export function setStatus(challenges: Array<Pick<EventBoardChallenge, "Published">>, broken: boolean): SetStatus {
     if (broken) return "broken";

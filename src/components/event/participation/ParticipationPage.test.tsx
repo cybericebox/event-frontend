@@ -203,7 +203,7 @@ it("asks a visitor with a join link to register first and remembers the code", a
     expect(sessionStorage.getItem("cib_team_join_code")).toBe("abc");
 });
 
-it("sends «Приєднатися» to /join with this browser's intent, so a registration without fields needs no second click", async () => {
+it("sends 'Join' to /join with this browser's intent, so a registration without fields needs no second click", async () => {
     state.guest = event;
     view();
     fireEvent.click(await screen.findByRole("link", {name: "Приєднатися"}));
@@ -278,7 +278,7 @@ it("does not expose invitations or duplicate locked-roster cards once formed",as
  expect(screen.queryByText(/Склад команди вже зафіксовано/)).toBeNull();
 });
 
-it("confirms leaving a formed team with the verb of its question: «Покинути»", async () => {
+it("confirms leaving a formed team with the verb of its question: 'Leave'", async () => {
     state.participant = {event, participantInfo: info, ownTeam: team(TeamRole.Member, {Formed: true})};
     state.members = [member("1", "Олена", TeamRole.Captain, false), member("2", "Іван", TeamRole.Member, true)];
     HTMLDialogElement.prototype.showModal = function showModal(this: HTMLDialogElement) {this.setAttribute("open", "");};

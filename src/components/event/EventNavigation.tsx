@@ -23,7 +23,7 @@ import {FeedbackLink} from "@/components/FeedbackLink";
 import {beforeChallenges, comparePageOrder} from "./content/pageNavigationOrder";
 import {resultsAvailability, resultsLinkVisible} from "@/types/resultsAvailability";
 import {withManageOrigin} from "@/utils/returnOrigin";
-import {adminOrigin, eventOrigin, exercisesOrigin, idOrigin, mainOrigin} from "@/utils/origins";
+import {adminOrigin, eventOrigin, exercisesOrigin, idOrigin} from "@/utils/origins";
 import {ACCOUNT_MENU_ICON_PROPS, ACCOUNT_MENU_ICONS, ACCOUNT_MENU_LABELS, accountMenu} from "@/utils/accountMenu";
 import {openConsentSettings} from "@/utils/consent";
 import {COOKIE_POLICY_HREF} from "@/components/consent/CookieSettingsLink";
@@ -141,10 +141,10 @@ function PinnedLink({href, label}: {href: string; label: string}) {
     return <Link className="ib-btn ib-btn--sm ib-btn--ghost event-pin event-pin--page" href={href} aria-current={path === href ? "page" : undefined}>{label}</Link>;
 }
 
-// pinned: the participant's items sit in the bar (VPN, «Моя участь») instead of the account menu.
+// pinned: the participant's items sit in the bar (VPN, “My participation”) instead of the account menu.
 // Theme selection lives in the account menu on every authenticated page.
 export function EventHeaderActions({event, authenticated, approved = false, pinned = false, theme = true}: Pick<Props, "event" | "authenticated" | "approved"> & {pinned?: boolean; theme?: boolean}) {
-    // Managers land on «Запити» in /manage; participants see «Усі».
+    // Managers land on “Requests” in /manage; participants see “All”.
     const manage = /^\/manage(\/|$)/.test(usePathname() ?? "");
     const preview = useParticipantPreview(event.EventID);
     const items = navigationRight({authenticated, approved: approved || preview.active && !!preview.state?.tasks, pinned});
@@ -153,7 +153,7 @@ export function EventHeaderActions({event, authenticated, approved = false, pinn
             {items.map(item => {
                 if (item === "vpn") return <VpnHeaderButton key={item} />;
                 if (item === "participation") return <PinnedLink key={item} href="/participation" label={t("nav.participation")} />;
-                if (item === "inbox") return <InboxButton key={item} defaultTab={manage ? "requests" : "all"} event={{id: event.EventID, otherEventsHref: `${mainOrigin}/?inbox`}} />;
+                if (item === "inbox") return <InboxButton key={item} defaultTab={manage ? "requests" : "all"} event={{id: event.EventID, otherEventsHref: `${process.env.NEXT_PUBLIC_MAIN_SITE_URL}/?inbox`}} />;
                 return <AccountMenu key={item} event={event} approved={approved} pinned={pinned} theme={theme} />;
             })}
         </>}

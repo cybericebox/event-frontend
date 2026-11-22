@@ -3,7 +3,7 @@ import {manageApiError} from "@/api/manage";
 import {analyticsRequest, type AnalyticsPeriod, wholeEvent} from "@/api/manageAnalytics";
 import {requireApiOrigin} from "@/utils/origins";
 
-// «Доброчесність» (docs/ANTI-CHEAT.md): GET .../manage/analytics/integrity.
+// “Integrity” (docs/ANTI-CHEAT.md): GET .../manage/analytics/integrity.
 // One list of flagged solves with the evidence of every signal. Hints for a
 // person to review, never a verdict; no IP, no penalty. Sensitive: owner, write
 // moderators and platform admins only.

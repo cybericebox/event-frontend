@@ -18,7 +18,8 @@ function tokenOf(value: string | string[] | undefined): string | null {
 
 export async function generateMetadata({searchParams}: Props): Promise<Metadata> {
     const token = tokenOf((await searchParams).token);
-    // The page never sends its address (with the token) on as a referrer.
+    // The page never sends its address (with the token) on as a referrer. Only this page: a page that opens a lab
+    // must not send no-referrer, or the grant form post goes out with "Origin: null" and the lab proxy refuses it.
     const base: Metadata = {referrer: "no-referrer", robots: {index: false, follow: false}};
     if (!token) return base;
     const start = await getLiveScreenStart(token);

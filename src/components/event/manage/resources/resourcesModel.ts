@@ -18,10 +18,10 @@ export function formatCpu(millicores: number): string {
     return t("manage.resources.unit.vcpu", {value: cpuNumber.format(millicores / 1000)});
 }
 
-// Memory in the same units the analytics use (МіБ, ГіБ with a decimal comma).
+// Memory in the same units the analytics use (MiB, GiB with a decimal comma).
 export const formatMemory = formatBytes;
 
-// «456 мілі-ядер · 1,9 ГіБ»: CPU and memory.
+// “456 millicores · 1,9 GiB”: CPU and memory.
 export function amountText(amount: Amount): string {
     return t("manage.resources.amount", {cpu: formatCpu(amount.CPUMillicores), memory: formatMemory(amount.MemoryBytes)});
 }
@@ -31,7 +31,7 @@ const GIB = 1024 ** 3;
 const MILLICPU_PER_GIB = 250;
 const gbNumber = new Intl.NumberFormat("uk-UA", {maximumFractionDigits: 1});
 
-// Memory in GB, the only unit of the reserve: «3,4 ГБ». CPU is not shown here.
+// Memory in GB, the only unit of the reserve: “3,4 GB”. CPU is not shown here.
 export const formatGB = (bytes: number) => t("manage.resources.gb", {value: gbNumber.format(bytes / GIB)});
 
 // What the event uses beyond its reserve, in bytes; 0 while the usage fits.
@@ -62,12 +62,12 @@ export function changeRequestErrors(draft: ChangeDraft, current: CurrentReserve)
     return errors;
 }
 
-// The new total of the reserve for «на скільки більше»: memory in GB, CPU follows the memory.
+// The new total of the reserve for “how much more”: memory in GB, CPU follows the memory.
 export function enlarged(allocated: Amount, extraGB: number): Amount {
     return {CPUMillicores: allocated.CPUMillicores + Math.round(extraGB * MILLICPU_PER_GIB), MemoryBytes: allocated.MemoryBytes + Math.round(extraGB * GIB)};
 }
 
-// «На скільки більше» and/or «Продовжити до», plus a reason (the backend's 22507). The extra is sent as the new
+// “How much more” and/or “Extend until”, plus a reason (the backend's 22507). The extra is sent as the new
 // total size; the end is the real end of the reservation.
 export function buildChangeRequest(draft: ChangeDraft, current: CurrentReserve): {input: ChangeRequestInput} | {issue: DraftIssue} {
     const extra = extraOf(draft.extraGB);
