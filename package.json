@@ -35,7 +35,7 @@
     "geist": "^1.9.2",
     "isomorphic-dompurify": "^4.8.0",
     "lexical": "0.53.0",
-    "lucide-react": "1.75.0",
+    "lucide-react": "1.76.0",
     "next": "16.4.6",
     "qrcode": "^1.5.4",
     "react": "19.3.1",
