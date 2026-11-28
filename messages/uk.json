@@ -4836,6 +4836,7 @@
   "manage.banners.deleteTitle": "Видалити банер?",
   "manage.banners.deleteBody": "Банер зникне з сайту заходу, повернути його не можна.",
   "auth.signInRedirect": "Переходимо до входу…",
+  "auth.secondFactorRedirect": "Переходимо до налаштування другого фактора…",
   "auth.noAccess.title": "Немає доступу",
   "auth.noAccess.body": "Ваш обліковий запис {email} не має доступу до цієї сторінки.",
   "auth.noAccess.switch": "Увійти іншим обліковим записом",

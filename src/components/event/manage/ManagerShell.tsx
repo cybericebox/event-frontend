@@ -22,6 +22,7 @@ import {ManagerSidebar} from "./ManagerSidebar";
 import {useDrawerContract} from "./useDrawerContract";
 import {managerCrumbs} from "./managerNavigation";
 import {loadFailure} from "@/utils/loadFailure";
+import {SECOND_FACTOR_ENROLMENT_REQUIRED} from "@/utils/signInRedirect";
 import {t} from "@/i18n/t";
 import {SkipLink} from "@/components/ui/SkipLink";
 
@@ -97,6 +98,8 @@ export function ManagerShell({event, children, onSection}: {event: PublicEventIn
         if (loadFailure(access.error) === "unavailable") return <OutageShell manage event={event} />;
         // 401: no session, straight to the sign-in and back here (no screen in between). 403: signed in without rights.
         if (status === 401) return <SignInRedirect event={event} />;
+        // 403 held at enrolment: the call already sent the browser to the ID second-factor page.
+        if (status === 403 && access.error instanceof ManageApiError && access.error.code === SECOND_FACTOR_ENROLMENT_REQUIRED) return <EventLoading event={event} full label={t("auth.secondFactorRedirect")} />;
         if (status === 403) return <NoAccessScreen title={t("manage.shell.forbiddenTitle")} homeHref="/" />;
         return <EventErrorScreen title={t("manage.shell.loadFailedTitle")} body={t("manage.shell.loadFailedBody")} error={access.error} onRetry={() => void access.refetch()} page />;
     }

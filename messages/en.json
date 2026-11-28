@@ -4836,6 +4836,7 @@
   "manage.banners.deleteTitle": "Delete the banner?",
   "manage.banners.deleteBody": "The banner disappears from the event site and cannot be restored.",
   "auth.signInRedirect": "Taking you to sign-in…",
+  "auth.secondFactorRedirect": "Taking you to set up your second factor…",
   "auth.noAccess.title": "No access",
   "auth.noAccess.body": "Your account {email} does not have access to this page.",
   "auth.noAccess.switch": "Sign in with another account",
