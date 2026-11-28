@@ -5,6 +5,7 @@ import {EventThemeSchema} from "@/types/eventTheme";
 import {ContentDocumentSchema, ContentValueSchema, ContentRichTextSchema, type ContentDocument} from "@/types/eventContent";
 import {ContentVariableCatalogSchema} from "@/components/event/content/variableCatalog";
 import {requireApiOrigin} from "@/utils/origins";
+import {redirectToSecondFactor, SECOND_FACTOR_ENROLMENT_REQUIRED} from "@/utils/signInRedirect";
 
 const themeSchema = EventThemeSchema;
 const optionalLimit = z.number().int().positive().nullable();
@@ -140,6 +141,8 @@ export class ManageApiError extends Error {
 
 export async function manageApiError(response: Response): Promise<ManageApiError> {
     const {code, context} = await readApiError(response);
+    // Held at enrolment: every management call answers this until the second factor is set up, so go there.
+    if (response.status === 403 && code === SECOND_FACTOR_ENROLMENT_REQUIRED) redirectToSecondFactor();
     return new ManageApiError(response.status, code, readRetryAfter(response), context, response.headers.get("X-Request-ID") ?? undefined);
 }
 
